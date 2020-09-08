@@ -29,8 +29,8 @@ namespace Stitcher
             LoadImage(testImagePath);
 
             colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
-            colorListBox.DrawItem += new DrawItemEventHandler(drawColorForList);
-            // colorListBox.MeasureItem += new MeasureItemEventHandler(measureColorForList);
+            colorListBox.DrawItem += DrawColorForList;
+            canvas.MouseWheel += CanvasMouseWheelHandler;
         }
 
         private void LoadImage(string path)
@@ -152,7 +152,7 @@ namespace Stitcher
         private string B2H(byte b) => b.ToString("X2");
         private string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
 
-        private void drawColorForList(object sender, DrawItemEventArgs e)
+        private void DrawColorForList(object sender, DrawItemEventArgs e)
         {
             var b = e.Bounds;
             var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
@@ -174,8 +174,15 @@ namespace Stitcher
             e.Graphics.DrawString(colorString, colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
         }
 
+        private void CanvasMouseWheelHandler(object sender, MouseEventArgs e)
+        {
+            var result = zoomSlider.Value + e.Delta / 120;
+            if (zoomSlider.Minimum <= result && result <= zoomSlider.Maximum)
+            {
+                zoomSlider.Value = result;
+            }
+        }
 
-        // UI Handlers
         private void colorListBox_SelectedIndexChanged(object sender, EventArgs e) =>
             Redraw();
 
