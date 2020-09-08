@@ -82,6 +82,7 @@
             this.colorListBox.Name = "colorListBox";
             this.colorListBox.Size = new System.Drawing.Size(145, 592);
             this.colorListBox.TabIndex = 4;
+            this.colorListBox.SelectedIndexChanged += new System.EventHandler(this.colorListBox_SelectedIndexChanged);
             // 
             // Form
             // 

@@ -12,15 +12,13 @@ namespace Stitcher
 {
     public partial class Form : System.Windows.Forms.Form
     {
-        int scalingFactor;
-        Bitmap image;
-        Bitmap displayImage;
+        Bitmap[] scaledImages;
         Dictionary<Color, Brush> brushes;
 
         public Form()
         {
             InitializeComponent();
-            scalingFactor = 1;
+            scaledImages = new Bitmap[zoomSlider.Maximum + 1];
             loadButton_Click(null, null);
 
             colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
@@ -28,82 +26,138 @@ namespace Stitcher
             // colorListBox.MeasureItem += new MeasureItemEventHandler(measureColorForList);
         }
 
-        /*
-         TODO:
-            highlight colors in image on selection
-         */
+        // TODO: Dispose() of highlighted images
+        // TODO: Allow multi-select
         const int swatchWidth = 20;
+        static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
         private void drawColorForList(object sender, DrawItemEventArgs e)
         {
             var b = e.Bounds;
-
             var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-            var color = (Color)colorListBox.Items[e.Index];
+            var item = colorListBox.Items[e.Index];
+
+            if (item == nullColor)
+            {
+                e.Graphics.FillRectangle(Brushes.White, b);
+                e.Graphics.DrawString(isSelected ? "* ------" : "  ------", colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
+                return;
+            }
+
+            var color = (Color)item;
 
             e.Graphics.FillRectangle(brushes[color], b.X, b.Y, b.X + swatchWidth - 1, b.Height);
             e.Graphics.FillRectangle(Brushes.White, b.X + swatchWidth, b.Y, b.Width - swatchWidth, b.Height);
 
-            var colorString = $"{ToHexString(color)}{(isSelected ? " *" : "  ")}";
+            var colorString = $"{(isSelected ? "* " : "  ")}{ToHexString(color)}";
             e.Graphics.DrawString(colorString, colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
         }
 
         private string B2H(byte b) => b.ToString("X2");
         private string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
 
-        private void AnalyzeColors()
+        private void AnalyzeColors(Bitmap b)
         {
             var colors = new HashSet<Color>();
-            for (int x = 0; x < image.Width; x++)
+            for (int x = 0; x < b.Width; x++)
             {
-                for (int y = 0; y < image.Height; y++)
+                for (int y = 0; y < b.Height; y++)
                 {
-                    colors.Add(image.GetPixel(x, y));
+                    colors.Add(b.GetPixel(x, y));
                 }
             }
             brushes = colors.ToDictionary(c => c, c => (Brush)new SolidBrush(c));
-            colorListBox.Items.AddRange(brushes.Keys.OrderBy(c => c.GetHue()).Cast<object>().ToArray());
+
+            var colorList = colors.OrderBy(c => c.GetHue()).Cast<object>().ToArray();
+            colorListBox.Items.Clear();
+            colorListBox.Items.Add(nullColor);
+            colorListBox.Items.AddRange(colorList);
         }
 
         // TODO: display image size & grid marks along outside
-        private void SetDisplayImage()
+        private void SetDisplayImage(Bitmap image, Color? selectedColor)
         {
-            if (displayImage != null)
+            if (selectedColor == null)
             {
-                displayImage.Dispose();
+                canvas.Image = image;
+                return;
             }
 
-            displayImage = new Bitmap(width: image.Width * scalingFactor, height: image.Height * scalingFactor);
+            var highlightedImage = new Bitmap(image);
+            var c = selectedColor.Value;
+            var backgroundColor = c.GetBrightness() > 0.9 ? Color.Black : Color.White;
             for (int x = 0; x < image.Width; x++)
             {
-                for (int y = 0; y < image.Height; y++)
+                for (int y = 0;  y < image.Height; y++)
                 {
-                    var c = image.GetPixel(x, y);
+                    if (image.GetPixel(x, y) != c)
+                    {
+                        highlightedImage.SetPixel(x, y, backgroundColor);
+                    }
+                }
+            }
+
+            canvas.Image = highlightedImage;
+        }
+
+        private Bitmap GenerateScaledImage(Bitmap nativeImage, int scalingIndex)
+        {
+            if (scalingIndex == 0)
+            {
+                return nativeImage;
+            }
+
+            var scalingFactor = 1 << scalingIndex;
+
+            var scaledImage = new Bitmap(width: nativeImage.Width * scalingFactor, height: nativeImage.Height * scalingFactor);
+            for (int x = 0; x < nativeImage.Width; x++)
+            {
+                for (int y = 0; y < nativeImage.Height; y++)
+                {
+                    var c = nativeImage.GetPixel(x, y);
                     for (int dx = 0; dx < scalingFactor; dx++)
                     {
                         for (int dy = 0; dy < scalingFactor; dy++)
                         {
-                            displayImage.SetPixel(scalingFactor * x + dx, scalingFactor * y + dy, c);
+                            scaledImage.SetPixel(scalingFactor * x + dx, scalingFactor * y + dy, c);
                         }
                     }
                 }
             }
-            canvas.Image = displayImage;
+
+            return scaledImage;
         }
+
+        private void GenerateScaledImages(Bitmap nativeImage)
+        {
+            for (int i = 0; i < scaledImages.Length; i++)
+            {
+                scaledImages[i] = GenerateScaledImage(nativeImage, i);
+            }
+        }
+
+        private Color? SelectedColor => colorListBox.SelectedItem == nullColor ? null : (Color?)colorListBox.SelectedItem;
+        private int ScalingIndex => zoomSlider.Value;
+
+        private void Redraw() =>
+            SetDisplayImage(scaledImages[ScalingIndex], SelectedColor);
+
+        private void colorListBox_SelectedIndexChanged(object sender, EventArgs e) =>
+            Redraw();
 
         private void zoomSlider_ValueChanged(object sender, EventArgs e)
         {
-            scalingFactor = 1 << zoomSlider.Value;
-            zoomLabel.Text = $"{100 * scalingFactor}%";
-            SetDisplayImage();
+            zoomLabel.Text = $"{100 * (1 << ScalingIndex)}%";
+            Redraw();
         }
 
         // TODO: actual load dialog, drag and drop support
         private void loadButton_Click(object sender, EventArgs e)
         {
-            if (image != null)
+            foreach (var oldImage in scaledImages.Where(i => i != null))
             {
-                image.Dispose();
+                oldImage.Dispose();
             }
+
             if (brushes != null)
             {
                 foreach (var b in brushes.Values)
@@ -112,9 +166,11 @@ namespace Stitcher
                 }
             }
 
-            image = new Bitmap(@"C:\Users\Matt\Desktop\stitch\shane.bmp");
-            AnalyzeColors();
-            SetDisplayImage();
+            var image = new Bitmap(@"C:\Users\Matt\Desktop\stitch\shane.bmp");
+            AnalyzeColors(image);
+            colorListBox.SelectedIndex = 0;
+            GenerateScaledImages(image);
+            zoomSlider_ValueChanged(null, null);
         }
     }
 }
