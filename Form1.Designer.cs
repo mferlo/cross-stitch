@@ -126,7 +126,7 @@
             // fileName
             // 
             this.fileName.AutoSize = true;
-            this.fileName.Location = new System.Drawing.Point(292, 14);
+            this.fileName.Location = new System.Drawing.Point(359, 14);
             this.fileName.Name = "fileName";
             this.fileName.Size = new System.Drawing.Size(63, 14);
             this.fileName.TabIndex = 8;

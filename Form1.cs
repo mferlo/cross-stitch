@@ -17,6 +17,7 @@ namespace Stitcher
 
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
         static readonly string testImagePath = @"C:\Users\Matt\Desktop\stitch\shane.bmp";
+        static readonly string testImagePath2 = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
 
         Color? SelectedColor => colorListBox.SelectedItem == nullColor ? null : (Color?)colorListBox.SelectedItem;
         int ScalingIndex => zoomSlider.Value;
@@ -29,7 +30,7 @@ namespace Stitcher
             scaledImages = new Bitmap[zoomSlider.Maximum + 1];
             brushes = new Dictionary<Color, Brush>();
 
-            LoadImage(testImagePath);
+            LoadImage(testImagePath2);
 
             colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
             colorListBox.DrawItem += DrawColorForList;
@@ -77,7 +78,6 @@ namespace Stitcher
             colorListBox.Items.Clear();
             colorListBox.Items.Add(nullColor);
             colorListBox.Items.AddRange(colorList);
-            colorListBox.SelectedIndex = 0;
         }
 
         private Bitmap GenerateScaledImage(Bitmap nativeImage, int scalingIndex)
@@ -267,8 +267,29 @@ namespace Stitcher
         private void zoomSlider_ValueChanged(object sender, EventArgs e) =>
             SetZoom();
 
-        // TODO: actual load dialog, drag and drop support
-        private void loadButton_Click(object sender, EventArgs e) =>
-            LoadImage(testImagePath);
+        // TODO: drag and drop support
+        private void loadButton_Click(object sender, EventArgs e)
+        {
+            string path;
+            using (var openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "Image Files|*.BMP;*.GIF;*.JPG;*.JPEG;*.TIF;*.TIFF;*.PNG";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    path = openFileDialog.FileName;
+                }
+                else
+                {
+                    path = null;
+                }
+
+            }
+
+            if (path != null)
+            {
+                LoadImage(path);
+            }
+        }
     }
 }
