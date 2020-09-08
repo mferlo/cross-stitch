@@ -111,19 +111,24 @@ namespace Stitcher
         }
 
         private void Redraw() =>
-            SetDisplayImage(scaledImages[ScalingIndex], SelectedColor);
+            SetDisplayImage(scaledImages[ScalingIndex]);
 
         // TODO: display image size & grid marks along outside
-        private void SetDisplayImage(Bitmap image, Color? selectedColor)
+        private void SetDisplayImage(Bitmap image)
         {
-            if (selectedColor == null)
+            if (canvas.Image != null && !scaledImages.Contains(canvas.Image))
+            {
+                canvas.Image.Dispose();
+            }
+
+            if (SelectedColor == null)
             {
                 canvas.Image = image;
                 return;
             }
 
             var highlightedImage = new Bitmap(image);
-            var c = selectedColor.Value;
+            var c = SelectedColor.Value;
             var backgroundColor = c.GetBrightness() > 0.9 ? Color.Black : Color.White;
             for (int x = 0; x < image.Width; x++)
             {
@@ -141,7 +146,6 @@ namespace Stitcher
 
 
         // Color List Support
-        // TODO: Dispose() of highlighted images
         // TODO: Allow multi-select
 
         const int swatchWidth = 20;
