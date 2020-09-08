@@ -15,34 +15,53 @@ namespace Stitcher
         int scalingFactor;
         Bitmap image;
         Bitmap displayImage;
-        List<Color> colors;
+        Dictionary<Color, Brush> brushes;
 
         public Form()
         {
             InitializeComponent();
             scalingFactor = 1;
             loadButton_Click(null, null);
+
+            colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
+            colorListBox.DrawItem += new DrawItemEventHandler(drawColorForList);
+            // colorListBox.MeasureItem += new MeasureItemEventHandler(measureColorForList);
         }
 
         /*
          TODO:
-            sort colors
-            display colors better (RGB + color swatch)
-            highlight colors on selection
+            highlight colors in image on selection
          */
+        const int swatchWidth = 20;
+        private void drawColorForList(object sender, DrawItemEventArgs e)
+        {
+            var b = e.Bounds;
+
+            var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            var color = (Color)colorListBox.Items[e.Index];
+
+            e.Graphics.FillRectangle(brushes[color], b.X, b.Y, b.X + swatchWidth - 1, b.Height);
+            e.Graphics.FillRectangle(Brushes.White, b.X + swatchWidth, b.Y, b.Width - swatchWidth, b.Height);
+
+            var colorString = $"{ToHexString(color)}{(isSelected ? " *" : "  ")}";
+            e.Graphics.DrawString(colorString, colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
+        }
+
+        private string B2H(byte b) => b.ToString("X2");
+        private string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
 
         private void AnalyzeColors()
         {
-            var cs = new HashSet<Color>();
+            var colors = new HashSet<Color>();
             for (int x = 0; x < image.Width; x++)
             {
                 for (int y = 0; y < image.Height; y++)
                 {
-                    cs.Add(image.GetPixel(x, y));
+                    colors.Add(image.GetPixel(x, y));
                 }
             }
-            colors = cs.ToList();
-            colorListBox.Items.AddRange(colors.Select(c => c.ToString()).ToArray<object>());
+            brushes = colors.ToDictionary(c => c, c => (Brush)new SolidBrush(c));
+            colorListBox.Items.AddRange(brushes.Keys.OrderBy(c => c.GetHue()).Cast<object>().ToArray());
         }
 
         // TODO: display image size & grid marks along outside
@@ -85,8 +104,15 @@ namespace Stitcher
             {
                 image.Dispose();
             }
-            image = new Bitmap(@"C:\Users\Matt\Desktop\stitch\shane.bmp");
+            if (brushes != null)
+            {
+                foreach (var b in brushes.Values)
+                {
+                    b.Dispose();
+                }
+            }
 
+            image = new Bitmap(@"C:\Users\Matt\Desktop\stitch\shane.bmp");
             AnalyzeColors();
             SetDisplayImage();
         }

@@ -75,11 +75,12 @@
             // 
             // colorListBox
             // 
+            this.colorListBox.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.colorListBox.FormattingEnabled = true;
-            this.colorListBox.ItemHeight = 15;
+            this.colorListBox.ItemHeight = 14;
             this.colorListBox.Location = new System.Drawing.Point(12, 41);
             this.colorListBox.Name = "colorListBox";
-            this.colorListBox.Size = new System.Drawing.Size(145, 604);
+            this.colorListBox.Size = new System.Drawing.Size(145, 592);
             this.colorListBox.TabIndex = 4;
             // 
             // Form
