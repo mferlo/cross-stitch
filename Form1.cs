@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Stitcher
@@ -26,9 +23,7 @@ namespace Stitcher
         public Form()
         {
             InitializeComponent();
-
             scaledImages = new Bitmap[zoomSlider.Maximum + 1];
-            brushes = new Dictionary<Color, Brush>();
 
             LoadImage(testImagePath2);
 
@@ -40,30 +35,31 @@ namespace Stitcher
 
         private void LoadImage(string path)
         {
-            foreach (var oldImage in scaledImages.Where(i => i != null))
+            zoomSlider.Value = 0;
+
+            for (var i = 0; i < scaledImages.Length; i++)
             {
-                oldImage.Dispose();
+                scaledImages[i]?.Dispose();
+                scaledImages[i] = null;
             }
 
-            foreach (var b in brushes.Values)
+            foreach (var b in brushes?.Values)
             {
                 b.Dispose();
             }
 
             fileName.Text = path.Split(System.IO.Path.DirectorySeparatorChar).Last();
 
-            using (var image = new Bitmap(path))
-            {
-                AnalyzeColors(image);
-                dimensionsLabel.Text = $"{image.Height}, {image.Width}";
-                GenerateScaledImages(image);
-            }
-
-            SetZoom();
+            var image = new Bitmap(path);
+            scaledImages[0] = image;
+            AnalyzeImage(image);
+            DisplayScaledImage();
         }
 
-        private void AnalyzeColors(Bitmap b)
+        private void AnalyzeImage(Bitmap b)
         {
+            dimensionsLabel.Text = $"{b.Height}, {b.Width}";
+
             var colors = new HashSet<Color>();
             for (int x = 0; x < b.Width; x++)
             {
@@ -80,21 +76,31 @@ namespace Stitcher
             colorListBox.Items.AddRange(colorList);
         }
 
-        private Bitmap GenerateScaledImage(Bitmap nativeImage, int scalingIndex)
+        private Bitmap GenerateScaledImage()
         {
-            var scalingFactor = 1 << scalingIndex;
+            var nativeImage = scaledImages[0];
+            var scaledImage = new Bitmap(width: nativeImage.Width * ScalingFactor, height: nativeImage.Height * ScalingFactor);
 
-            var scaledImage = new Bitmap(width: nativeImage.Width * scalingFactor, height: nativeImage.Height * scalingFactor);
+            /*
+             * FIXME: Perf. How to get it to do no anti-aliasing?
+            using (var graphics = Graphics.FromImage(scaledImage))
+            {
+                graphics.SmoothingMode = SmoothingMode.None;
+                graphics.ScaleTransform(ScalingFactor, ScalingFactor);
+                graphics.DrawImage(nativeImage, 0, 0); //, 0, 0, width: scaledImage.Width, height: scaledImage.Height);
+            }
+            */
+
             for (int x = 0; x < nativeImage.Width; x++)
             {
                 for (int y = 0; y < nativeImage.Height; y++)
                 {
                     var c = nativeImage.GetPixel(x, y);
-                    for (int dx = 0; dx < scalingFactor; dx++)
+                    for (int dx = 0; dx < ScalingFactor; dx++)
                     {
-                        for (int dy = 0; dy < scalingFactor; dy++)
+                        for (int dy = 0; dy < ScalingFactor; dy++)
                         {
-                            scaledImage.SetPixel(scalingFactor * x + dx, scalingFactor * y + dy, c);
+                            scaledImage.SetPixel(ScalingFactor * x + dx, ScalingFactor * y + dy, c);
                         }
                     }
                 }
@@ -103,16 +109,10 @@ namespace Stitcher
             return scaledImage;
         }
 
-        private void GenerateScaledImages(Bitmap nativeImage)
-        {
-            for (int i = 0; i <= zoomSlider.Maximum; i++)
-            {
-                scaledImages[i] = GenerateScaledImage(nativeImage, i);
-            }
-        }
+        const int bigTickLength = 5;
+        const int bigTickInterval = 10;
+        const int littleTickLength = 2;
 
-        const int rulerBigTickLength = 5;
-        const int rulerSmallTickLength = 2;
         private void DrawHeightRuler(int maxHeight)
         {
             heightRuler.Image?.Dispose();
@@ -122,20 +122,12 @@ namespace Stitcher
             {
                 graphics.Clear(DefaultBackColor);
 
-                var x1 = heightRuler.Width - rulerBigTickLength;
+                var x1Little = heightRuler.Width - littleTickLength;
+                var x1Big = heightRuler.Width - bigTickLength;
                 var x2 = heightRuler.Width;
-                for (var y = 0; y < maxHeight; y += 10 * ScalingFactor)
+                for (var y = 0; y <= maxHeight; y += ScalingFactor)
                 {
-                    graphics.DrawLine(Pens.Black, x1, y, x2, y);
-                }
-
-                if (ScalingFactor > 1)
-                {
-                    x1 = heightRuler.Width - rulerSmallTickLength;
-                    for (var y = 0; y < maxHeight; y += ScalingFactor)
-                    {
-                        graphics.DrawLine(Pens.Black, x1, y, x2, y);
-                    }
+                   graphics.DrawLine(Pens.Black, y % bigTickInterval == 0 ? x1Big : x1Little, y, x2, y);
                 }
             }
 
@@ -151,20 +143,12 @@ namespace Stitcher
             {
                 graphics.Clear(DefaultBackColor);
 
-                var y1 = widthRuler.Height - rulerBigTickLength;
+                var y1Little = widthRuler.Height - littleTickLength;
+                var y1Big = widthRuler.Height - bigTickLength;
                 var y2 = widthRuler.Height;
-                for (var x = 0; x < maxWidth; x += 10 * ScalingFactor)
+                for (var x = 0; x <= maxWidth; x += ScalingFactor)
                 {
-                    graphics.DrawLine(Pens.Black, x, y1, x, y2);
-                }
-
-                if (ScalingFactor > 1)
-                {
-                    y1 = widthRuler.Height - rulerSmallTickLength;
-                    for (var x = 0; x < maxWidth; x += ScalingFactor)
-                    {
-                        graphics.DrawLine(Pens.Black, x, y1, x, y2);
-                    }
+                    graphics.DrawLine(Pens.Black, x, x % bigTickInterval == 0 ? y1Big : y1Little, x, y2);
                 }
             }
 
@@ -183,16 +167,20 @@ namespace Stitcher
         private void SetZoom()
         {
             zoomLabel.Text = $"{100 * (1 << ScalingIndex)}%";
-            Redraw();
+            if (scaledImages[ScalingIndex] == null)
+            {
+                scaledImages[ScalingIndex] = GenerateScaledImage();
+            }
+            DisplayScaledImage();
         }
 
-        private void Redraw()
+        private void DisplayScaledImage()
         {
-            SetDisplayImage(scaledImages[ScalingIndex]);
+            DisplayMaybeHighlightedImage(scaledImages[ScalingIndex]);
             DrawRulers();
         }
 
-        private void SetDisplayImage(Bitmap image)
+        private void DisplayMaybeHighlightedImage(Bitmap image)
         {
             if (!scaledImages.Contains(canvas.Image))
             {
@@ -262,7 +250,7 @@ namespace Stitcher
         }
 
         private void colorListBox_SelectedIndexChanged(object sender, EventArgs e) =>
-            Redraw();
+            DisplayScaledImage();
 
         private void zoomSlider_ValueChanged(object sender, EventArgs e) =>
             SetZoom();
