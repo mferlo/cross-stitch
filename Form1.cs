@@ -20,17 +20,21 @@ namespace Stitcher
 
         Color? SelectedColor => colorListBox.SelectedItem == nullColor ? null : (Color?)colorListBox.SelectedItem;
         int ScalingIndex => zoomSlider.Value;
+        int ScalingFactor => 1 << zoomSlider.Value;
 
         public Form()
         {
             InitializeComponent();
+
             scaledImages = new Bitmap[zoomSlider.Maximum + 1];
             brushes = new Dictionary<Color, Brush>();
+
             LoadImage(testImagePath);
 
             colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
             colorListBox.DrawItem += DrawColorForList;
             canvas.MouseWheel += CanvasMouseWheelHandler;
+            ResizeEnd += (_, __) => DrawRulers();
         }
 
         private void LoadImage(string path)
@@ -45,9 +49,12 @@ namespace Stitcher
                 b.Dispose();
             }
 
+            fileName.Text = path.Split(System.IO.Path.DirectorySeparatorChar).Last();
+
             using (var image = new Bitmap(path))
             {
                 AnalyzeColors(image);
+                dimensionsLabel.Text = $"{image.Height}, {image.Width}";
                 GenerateScaledImages(image);
             }
 
@@ -98,9 +105,78 @@ namespace Stitcher
 
         private void GenerateScaledImages(Bitmap nativeImage)
         {
-            for (int i = 0; i < scaledImages.Length; i++)
+            for (int i = 0; i <= zoomSlider.Maximum; i++)
             {
                 scaledImages[i] = GenerateScaledImage(nativeImage, i);
+            }
+        }
+
+        const int rulerBigTickLength = 5;
+        const int rulerSmallTickLength = 2;
+        private void DrawHeightRuler(int maxHeight)
+        {
+            heightRuler.Image?.Dispose();
+
+            var image = new Bitmap(width: heightRuler.Width, height: heightRuler.Height);
+            using (var graphics = Graphics.FromImage(image))
+            {
+                graphics.Clear(DefaultBackColor);
+
+                var x1 = heightRuler.Width - rulerBigTickLength;
+                var x2 = heightRuler.Width;
+                for (var y = 0; y < maxHeight; y += 10 * ScalingFactor)
+                {
+                    graphics.DrawLine(Pens.Black, x1, y, x2, y);
+                }
+
+                if (ScalingFactor > 1)
+                {
+                    x1 = heightRuler.Width - rulerSmallTickLength;
+                    for (var y = 0; y < maxHeight; y += ScalingFactor)
+                    {
+                        graphics.DrawLine(Pens.Black, x1, y, x2, y);
+                    }
+                }
+            }
+
+            heightRuler.Image = image;
+        }
+
+        private void DrawWidthRuler(int maxWidth)
+        {
+            widthRuler.Image?.Dispose();
+
+            var image = new Bitmap(width: widthRuler.Width, height: widthRuler.Height);
+            using (var graphics = Graphics.FromImage(image))
+            {
+                graphics.Clear(DefaultBackColor);
+
+                var y1 = widthRuler.Height - rulerBigTickLength;
+                var y2 = widthRuler.Height;
+                for (var x = 0; x < maxWidth; x += 10 * ScalingFactor)
+                {
+                    graphics.DrawLine(Pens.Black, x, y1, x, y2);
+                }
+
+                if (ScalingFactor > 1)
+                {
+                    y1 = widthRuler.Height - rulerSmallTickLength;
+                    for (var x = 0; x < maxWidth; x += ScalingFactor)
+                    {
+                        graphics.DrawLine(Pens.Black, x, y1, x, y2);
+                    }
+                }
+            }
+
+            widthRuler.Image = image;
+        }
+
+        private void DrawRulers()
+        {
+            if (canvas.Image != null)
+            {
+                DrawHeightRuler(canvas.Image.Height);
+                DrawWidthRuler(canvas.Image.Width);
             }
         }
 
@@ -110,15 +186,17 @@ namespace Stitcher
             Redraw();
         }
 
-        private void Redraw() =>
+        private void Redraw()
+        {
             SetDisplayImage(scaledImages[ScalingIndex]);
+            DrawRulers();
+        }
 
-        // TODO: display image size & grid marks along outside
         private void SetDisplayImage(Bitmap image)
         {
-            if (canvas.Image != null && !scaledImages.Contains(canvas.Image))
+            if (!scaledImages.Contains(canvas.Image))
             {
-                canvas.Image.Dispose();
+                canvas.Image?.Dispose();
             }
 
             if (SelectedColor == null)
