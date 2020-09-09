@@ -58,7 +58,7 @@ namespace Stitcher
 
         private void AnalyzeImage(Bitmap b)
         {
-            dimensionsLabel.Text = $"{b.Height}, {b.Width}";
+            dimensionsLabel.Text = $"{b.Height} H, {b.Width} W";
 
             var colors = new HashSet<Color>();
             for (int x = 0; x < b.Width; x++)
@@ -277,6 +277,144 @@ namespace Stitcher
             if (path != null)
             {
                 LoadImage(path);
+            }
+        }
+
+
+        const float monitorPixelsPerInch = 92.0f;
+        const float fabricSquaresPerInch = 14.0f;
+        const float monitorPixelsPerFabricSquare = monitorPixelsPerInch / fabricSquaresPerInch;
+
+        static readonly string actualSizeCanvasName = "actualSizeCanvas";
+        private bool ActualSizeState = false;
+        private SaveState ScaledState;
+
+        class SaveState
+        {
+            public Image WidthRulerImage;
+            public Image HeightRulerImage;
+            public string DimensionText;
+        }
+
+        private (float width, float height) MakeActualSizeImage()
+        {
+            ScaledState = new SaveState
+            {
+                WidthRulerImage = widthRuler.Image,
+                HeightRulerImage = heightRuler.Image,
+                DimensionText = dimensionsLabel.Text,
+            };
+
+            var actualSizeCanvas = new PictureBox
+            {
+                Name = actualSizeCanvasName,
+                Location = canvas.Location,
+                Size = canvas.Size,
+            };
+
+            var originalImage = scaledImages[0];
+
+            var actualWidth = originalImage.Width * monitorPixelsPerFabricSquare;
+            var actualHeight = originalImage.Height * monitorPixelsPerFabricSquare;
+
+            actualSizeCanvas.Image = new Bitmap(scaledImages[0], width: (int)actualWidth, height: (int)actualHeight);
+            this.Controls.Add(actualSizeCanvas);
+            return (width: actualWidth, height: actualHeight);
+        }
+
+        private void MakeActualSizeRulers()
+        {
+            var image = new Bitmap(width: heightRuler.Width, height: heightRuler.Height);
+            using (var graphics = Graphics.FromImage(image))
+            {
+                graphics.Clear(DefaultBackColor);
+
+                var x1Big = heightRuler.Width - bigTickLength;
+                var x2 = heightRuler.Width;
+                for (var y = 0.0f; y <= heightRuler.Height; y += monitorPixelsPerInch)
+                {
+                    graphics.DrawLine(Pens.Black, x1Big, y, x2, y);
+                }
+            }
+            heightRuler.Image = image;
+
+            image = new Bitmap(width: widthRuler.Width, height: widthRuler.Height);
+            using (var graphics = Graphics.FromImage(image))
+            {
+                graphics.Clear(DefaultBackColor);
+
+                var y1Big = widthRuler.Height - bigTickLength;
+                var y2 = widthRuler.Height;
+                for (var x = 0.0f; x <= widthRuler.Width; x += monitorPixelsPerInch)
+                {
+                    graphics.DrawLine(Pens.Black, x, y1Big, x, y2);
+                }
+            }
+
+            widthRuler.Image = image;
+        }
+
+        private void MakeActualSize()
+        {
+            ActualSizeState = true;
+            actualSize.Text = "Exit";
+
+            var size = MakeActualSizeImage();
+            MakeActualSizeRulers();
+            dimensionsLabel.Text = $"{Math.Round(size.height / monitorPixelsPerInch, 1)}\" H, {Math.Round(size.width / monitorPixelsPerInch, 1)}\" W";
+        }
+
+        private void RestoreScaledSize()
+        {
+            ActualSizeState = false;
+            actualSize.Text = "To Scale";
+
+            var pictureBox = (PictureBox)Controls[actualSizeCanvasName];
+            Controls.RemoveByKey(actualSizeCanvasName);
+            pictureBox.Image.Dispose();
+
+            widthRuler.Image.Dispose();
+            widthRuler.Image = ScaledState.WidthRulerImage;
+
+            heightRuler.Image.Dispose();
+            heightRuler.Image = ScaledState.HeightRulerImage;
+
+            dimensionsLabel.Text = ScaledState.DimensionText;
+        }
+
+        private void actualSize_Click(object sender, EventArgs e)
+        {
+            if (scaledImages[0] == null)
+            {
+                return;
+            }
+
+            var otherControls = new List<Control>
+            {
+                zoomSlider,
+                zoomLabel,
+                colorListBox,
+                loadButton,
+                canvas,
+            };
+
+            if (ActualSizeState)
+            {
+                RestoreScaledSize();
+
+                foreach (var c in otherControls)
+                {
+                    c.Show();
+                }
+            }
+            else
+            {
+                MakeActualSize();
+
+                foreach (var c in otherControls)
+                {
+                    c.Hide();
+                }
             }
         }
     }

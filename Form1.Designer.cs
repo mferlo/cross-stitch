@@ -37,6 +37,7 @@
             this.dimensionsLabel = new System.Windows.Forms.Label();
             this.heightRuler = new System.Windows.Forms.PictureBox();
             this.fileName = new System.Windows.Forms.Label();
+            this.actualSize = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.zoomSlider)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.canvas)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.widthRuler)).BeginInit();
@@ -132,11 +133,22 @@
             this.fileName.TabIndex = 8;
             this.fileName.Text = "fileName";
             // 
+            // actualSize
+            // 
+            this.actualSize.Location = new System.Drawing.Point(977, 9);
+            this.actualSize.Name = "actualSize";
+            this.actualSize.Size = new System.Drawing.Size(92, 23);
+            this.actualSize.TabIndex = 9;
+            this.actualSize.Text = "Actual Size";
+            this.actualSize.UseVisualStyleBackColor = true;
+            this.actualSize.Click += new System.EventHandler(this.actualSize_Click);
+            // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1101, 679);
+            this.Controls.Add(this.actualSize);
             this.Controls.Add(this.fileName);
             this.Controls.Add(this.heightRuler);
             this.Controls.Add(this.dimensionsLabel);
@@ -174,6 +186,7 @@
         private System.Windows.Forms.Label dimensionsLabel;
         private System.Windows.Forms.PictureBox heightRuler;
         private System.Windows.Forms.Label fileName;
+        private System.Windows.Forms.Button actualSize;
     }
 }
 
