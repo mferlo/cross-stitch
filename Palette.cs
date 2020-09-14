@@ -6,47 +6,54 @@ using System.Linq;
 
 namespace Stitcher
 {
-    public class Palette : IDisposable
+    public class ColorInfo
     {
-        class ColorInfo
+        public Color Color { get;  }
+        public Brush Brush { get; }
+        public int Count { get; private set; }
+
+        public ColorInfo(Color color)
         {
-            public int Count;
-            public Brush Brush;
+            Color = color;
+            Brush = new SolidBrush(color);
+            Count = 1;
         }
 
-        private Dictionary<Color, ColorInfo> palette;
+        public void Inc() => Count++;
+    }
+
+    public class Palette : IDisposable
+    {
+        private List<ColorInfo> palette;
 
         public static Palette FromBitmap(Bitmap bitmap)
         {
-            var palette = new Dictionary<Color, ColorInfo>();
+            var data = new Dictionary<Color, ColorInfo>();
 
-            var colorCounts = new Dictionary<Color, int>();
             for (int x = 0; x < bitmap.Width; x++)
             {
                 for (int y = 0; y < bitmap.Height; y++)
                 {
                     var color = bitmap.GetPixel(x, y);
-                    if (palette.TryGetValue(color, out var colorInfo))
+                    if (data.TryGetValue(color, out var colorInfo))
                     {
-                        colorInfo.Count++;
+                        colorInfo.Inc();
                     }
                     else
                     {
-                        palette.Add(color, new ColorInfo { Brush = new SolidBrush(color), Count = 1 });
+                        data.Add(color, new ColorInfo(color));
                     }
                 }
             }
 
-            return new Palette { palette = palette };
+            return new Palette { palette = data.Values.ToList() };
         }
 
-        public IEnumerable<Color> Colors => palette.Keys.OrderBy(c => c.GetHue());
-        public Brush Brush(Color color) => palette[color].Brush;
-        public int Count(Color color) => palette[color].Count;
+        public IEnumerable<ColorInfo> PaletteInfo => palette;
 
         public void Dispose()
         {
-            foreach (var brush in palette.Values.Select(i => i.Brush))
+            foreach (var brush in palette.Select(i => i.Brush))
             {
                 brush.Dispose();
             }

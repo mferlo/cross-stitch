@@ -15,7 +15,6 @@ namespace Stitcher
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
         static readonly string testImagePath2 = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
 
-        Color? SelectedColor => colorListBox.SelectedItem == nullColor ? null : (Color?)colorListBox.SelectedItem;
         int ScalingIndex => zoomSlider.Value;
         int ScalingFactor => 1 << zoomSlider.Value;
 
@@ -60,7 +59,7 @@ namespace Stitcher
 
             colorListBox.Items.Clear();
             colorListBox.Items.Add(nullColor);
-            colorListBox.Items.AddRange(palette.Colors.Cast<object>().ToArray());
+            colorListBox.Items.AddRange(palette.PaletteInfo.OrderBy(colorInfo => colorInfo.Color.GetHue()).Cast<Object>().ToArray());
         }
 
         private Bitmap GenerateScaledImage()
@@ -174,14 +173,16 @@ namespace Stitcher
                 canvas.Image?.Dispose();
             }
 
-            if (SelectedColor == null)
+            var selectedColor = SelectedColor();
+
+            if (selectedColor == null)
             {
                 canvas.Image = image;
                 return;
             }
 
             var highlightedImage = new Bitmap(image);
-            var c = SelectedColor.Value;
+            var c = selectedColor.Value;
             var backgroundColor = c.GetBrightness() > 0.9 ? Color.Black : Color.White;
             for (int x = 0; x < image.Width; x++)
             {
@@ -201,9 +202,28 @@ namespace Stitcher
         // Color List Support
         // TODO: Allow multi-select
 
+        private Color? SelectedColor()
+        {
+            var selected = colorListBox.SelectedItem;
+            if (selected == null || selected == nullColor)
+            {
+                return null;
+            }
+            else
+            {
+                return ((ColorInfo)colorListBox.SelectedItem).Color;
+            }
+        }
+
         const int swatchWidth = 20;
         private string B2H(byte b) => b.ToString("X2");
         private string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
+
+        private string Format(ColorInfo colorInfo, bool isSelected)
+        {
+            return $"{(isSelected ? "* " : "  ")}{ToHexString(colorInfo.Color)}";
+
+        }
 
         private void DrawColorForList(object sender, DrawItemEventArgs e)
         {
@@ -211,21 +231,19 @@ namespace Stitcher
             var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
             var item = colorListBox.Items[e.Index];
 
-            if (item == nullColor)
+            e.Graphics.FillRectangle(Brushes.White, b);
+
+            if (item is ColorInfo colorInfo)
             {
-                e.Graphics.FillRectangle(Brushes.White, b);
-                e.Graphics.DrawString(isSelected ? "* ------" : "  ------", colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
-                return;
+                e.Graphics.FillRectangle(colorInfo.Brush, b.X, b.Y, b.X + swatchWidth - 1, b.Height);
+                e.Graphics.DrawString(Format(colorInfo, isSelected), colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
             }
-
-            var color = (Color)item;
-
-            e.Graphics.FillRectangle(palette.Brush(color), b.X, b.Y, b.X + swatchWidth - 1, b.Height);
-            e.Graphics.FillRectangle(Brushes.White, b.X + swatchWidth, b.Y, b.Width - swatchWidth, b.Height);
-
-            var colorString = $"{(isSelected ? "* " : "  ")}{ToHexString(color)}";
-            e.Graphics.DrawString(colorString, colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
+            else
+            {
+                e.Graphics.DrawString(isSelected ? "* ------" : "  ------", colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
+            }
         }
+
 
         private void CanvasMouseWheelHandler(object sender, MouseEventArgs e)
         {
