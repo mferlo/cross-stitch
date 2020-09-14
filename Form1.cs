@@ -10,10 +10,9 @@ namespace Stitcher
     public partial class Form : System.Windows.Forms.Form
     {
         Bitmap[] scaledImages;
-        Dictionary<Color, Brush> brushes = new Dictionary<Color, Brush>();
+        Palette palette;
 
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
-        static readonly string testImagePath = @"C:\Users\Matt\Desktop\stitch\shane.bmp";
         static readonly string testImagePath2 = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
 
         Color? SelectedColor => colorListBox.SelectedItem == nullColor ? null : (Color?)colorListBox.SelectedItem;
@@ -43,10 +42,7 @@ namespace Stitcher
                 scaledImages[i] = null;
             }
 
-            foreach (var b in brushes?.Values)
-            {
-                b.Dispose();
-            }
+            palette?.Dispose();
 
             fileName.Text = path.Split(System.IO.Path.DirectorySeparatorChar).Last();
 
@@ -60,20 +56,11 @@ namespace Stitcher
         {
             dimensionsLabel.Text = $"{b.Height} H, {b.Width} W";
 
-            var colors = new HashSet<Color>();
-            for (int x = 0; x < b.Width; x++)
-            {
-                for (int y = 0; y < b.Height; y++)
-                {
-                    colors.Add(b.GetPixel(x, y));
-                }
-            }
-            brushes = colors.ToDictionary(c => c, c => (Brush)new SolidBrush(c));
+            palette = Palette.FromBitmap(b);
 
-            var colorList = colors.OrderBy(c => c.GetHue()).Cast<object>().ToArray();
             colorListBox.Items.Clear();
             colorListBox.Items.Add(nullColor);
-            colorListBox.Items.AddRange(colorList);
+            colorListBox.Items.AddRange(palette.Colors.Cast<object>().ToArray());
         }
 
         private Bitmap GenerateScaledImage()
@@ -233,7 +220,7 @@ namespace Stitcher
 
             var color = (Color)item;
 
-            e.Graphics.FillRectangle(brushes[color], b.X, b.Y, b.X + swatchWidth - 1, b.Height);
+            e.Graphics.FillRectangle(palette.Brush(color), b.X, b.Y, b.X + swatchWidth - 1, b.Height);
             e.Graphics.FillRectangle(Brushes.White, b.X + swatchWidth, b.Y, b.Width - swatchWidth, b.Height);
 
             var colorString = $"{(isSelected ? "* " : "  ")}{ToHexString(color)}";
