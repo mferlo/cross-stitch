@@ -24,7 +24,16 @@ namespace Stitcher
 
     public class Palette : IDisposable
     {
+        public IEnumerable<ColorInfo> PaletteInfo => palette;
+        public int PixelCount { get; }
+
         private List<ColorInfo> palette;
+
+        private Palette(List<ColorInfo> palette)
+        {
+            this.palette = palette;
+            PixelCount = palette.Sum(ci => ci.Count);
+        }
 
         public static Palette FromBitmap(Bitmap bitmap)
         {
@@ -46,10 +55,8 @@ namespace Stitcher
                 }
             }
 
-            return new Palette { palette = data.Values.ToList() };
+            return new Palette(data.Values.ToList());
         }
-
-        public IEnumerable<ColorInfo> PaletteInfo => palette;
 
         public void Dispose()
         {

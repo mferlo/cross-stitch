@@ -219,11 +219,8 @@ namespace Stitcher
         private string B2H(byte b) => b.ToString("X2");
         private string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
 
-        private string Format(ColorInfo colorInfo, bool isSelected)
-        {
-            return $"{(isSelected ? "* " : "  ")}{ToHexString(colorInfo.Color)}";
-
-        }
+        private string Format(bool isSelected, string color, int count) =>
+            $"{(isSelected ? "*" : " ")} {color} ({count,5})";
 
         private void DrawColorForList(object sender, DrawItemEventArgs e)
         {
@@ -233,17 +230,18 @@ namespace Stitcher
 
             e.Graphics.FillRectangle(Brushes.White, b);
 
+            string colorString;
             if (item is ColorInfo colorInfo)
             {
                 e.Graphics.FillRectangle(colorInfo.Brush, b.X, b.Y, b.X + swatchWidth - 1, b.Height);
-                e.Graphics.DrawString(Format(colorInfo, isSelected), colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
+                colorString = Format(isSelected, ToHexString(colorInfo.Color), colorInfo.Count);
             }
             else
             {
-                e.Graphics.DrawString(isSelected ? "* ------" : "  ------", colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
+                colorString = Format(isSelected, "[All] ", palette.PixelCount);
             }
+            e.Graphics.DrawString(colorString, colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
         }
-
 
         private void CanvasMouseWheelHandler(object sender, MouseEventArgs e)
         {
