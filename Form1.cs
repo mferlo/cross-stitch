@@ -11,6 +11,7 @@ namespace Stitcher
     {
         Bitmap[] scaledImages;
         Palette palette;
+        Color? selectedBackgroundColor;
 
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
         static readonly string testImagePath2 = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
@@ -34,6 +35,8 @@ namespace Stitcher
         private void LoadImage(string path)
         {
             zoomSlider.Value = 0;
+            selectedBackgroundColor = null;
+            backgroundColor.BackColor = DefaultBackColor;
 
             for (var i = 0; i < scaledImages.Length; i++)
             {
@@ -56,10 +59,19 @@ namespace Stitcher
             dimensionsLabel.Text = $"{b.Height} H, {b.Width} W";
 
             palette = Palette.FromBitmap(b);
+            InitializeColorListBox();
+        }
 
+        private void InitializeColorListBox() // FIXME: ObservableCollection?
+        {
             colorListBox.Items.Clear();
             colorListBox.Items.Add(nullColor);
             colorListBox.Items.AddRange(palette.PaletteInfo.OrderBy(colorInfo => colorInfo.Color.GetHue()).Cast<Object>().ToArray());
+
+            colorListBox.Height = colorListBox.PreferredHeight;
+            setBackgroundButton.Top = colorListBox.Bottom + 6;
+            backgroundColor.Top = colorListBox.Bottom + 6;
+            setBackgroundButton.Enabled = false;
         }
 
         private Bitmap GenerateScaledImage()
@@ -183,7 +195,7 @@ namespace Stitcher
 
             var highlightedImage = new Bitmap(image);
             var c = selectedColor.Value;
-            var backgroundColor = c.GetBrightness() > 0.9 ? Color.Black : Color.White;
+            var backgroundColor = DefaultBackColor;
             for (int x = 0; x < image.Width; x++)
             {
                 for (int y = 0; y < image.Height; y++)
@@ -252,8 +264,11 @@ namespace Stitcher
             }
         }
 
-        private void colorListBox_SelectedIndexChanged(object sender, EventArgs e) =>
+        private void colorListBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            setBackgroundButton.Enabled = SelectedColor() != null && selectedBackgroundColor == null;
             DisplayScaledImage();
+        }
 
         private void zoomSlider_ValueChanged(object sender, EventArgs e) =>
             SetZoom();
@@ -419,6 +434,92 @@ namespace Stitcher
                     c.Hide();
                 }
             }
+        }
+
+        IEnumerable<(int, int)> EdgeCoordinates(Size size)
+        {
+            for (var y = 0; y < size.Height; y++)
+            {
+                yield return (0, y);
+                yield return (size.Width - 1, y);
+            }
+
+            for (var x = 0; x < size.Width; x++)
+            {
+                yield return (x, 0);
+                yield return (x, size.Height - 1);
+            }
+        }
+
+        bool ValidPixel(Size size, (int x, int y) p) =>
+            0 <= p.x && p.x < size.Width && 0 <= p.y && p.y < size.Height;
+
+        IEnumerable<(int, int)> Neighbors((int x, int y) p)
+        {
+            yield return (p.x - 1, p.y);
+            yield return (p.x + 1, p.y);
+            yield return (p.x, p.y - 1);
+            yield return (p.x, p.y + 1);
+        }
+
+        IEnumerable<(int, int)> ValidNeighbors(Size size, (int, int) pixel) =>
+            Neighbors(pixel).Where(p => ValidPixel(size, p));
+
+        private int RemoveBackgroundColor(Color color)
+        {
+            var image = scaledImages[0];
+
+            var backgroundPixels = new HashSet<(int x, int y)>();
+            var pixelsToExamine = new Queue<(int x, int y)>(EdgeCoordinates(image.Size));
+
+            while (pixelsToExamine.Any())
+            {
+                var p = pixelsToExamine.Dequeue();
+                var c = image.GetPixel(p.x, p.y);
+                if (c == color)
+                {
+                    backgroundPixels.Add(p);
+                    foreach (var newPixel in ValidNeighbors(image.Size, p))
+                    {
+                        if (!pixelsToExamine.Contains(newPixel) && !backgroundPixels.Contains(newPixel))
+                        {
+                            pixelsToExamine.Enqueue(newPixel);
+                        }
+                    }
+                }
+            }
+
+            foreach (var p in backgroundPixels)
+            {
+                image.SetPixel(p.x, p.y, DefaultBackColor);
+            }
+
+            return backgroundPixels.Count;
+        }
+
+        private void setBackgroundButton_Click(object sender, EventArgs e)
+        {
+            var bgColor = SelectedColor().Value;
+            backgroundColor.BackColor = bgColor;
+            selectedBackgroundColor = bgColor;
+
+            var pixelsRemoved = RemoveBackgroundColor(bgColor);
+            this.palette.Remove(bgColor, pixelsRemoved);
+            InitializeColorListBox();
+
+            // Get rid of the old scaled images
+            var oldZoom = zoomSlider.Value;
+            zoomSlider.Value = 0;
+            for (var i = 1; i < scaledImages.Length; i++)
+            {
+                scaledImages[i]?.Dispose();
+                scaledImages[i] = null;
+            }
+            zoomSlider.Value = oldZoom;
+            DisplayScaledImage();
+
+            // Undo logic isn't worth doing. User can reload the file to undo/change the bg color
+            setBackgroundButton.Enabled = false; 
         }
     }
 }

@@ -20,19 +20,20 @@ namespace Stitcher
         }
 
         public void Inc() => Count++;
+        public void Dec(int x) => Count -= x;
     }
 
     public class Palette : IDisposable
     {
-        public IEnumerable<ColorInfo> PaletteInfo => palette;
-        public int PixelCount { get; }
+        public IEnumerable<ColorInfo> PaletteInfo => palette.Values;
+        public int PixelCount { get; private set; }
 
-        private List<ColorInfo> palette;
+        private Dictionary<Color, ColorInfo> palette;
 
-        private Palette(List<ColorInfo> palette)
+        private Palette(Dictionary<Color, ColorInfo> palette)
         {
             this.palette = palette;
-            PixelCount = palette.Sum(ci => ci.Count);
+            PixelCount = this.palette.Values.Sum(ci => ci.Count);
         }
 
         public static Palette FromBitmap(Bitmap bitmap)
@@ -55,12 +56,28 @@ namespace Stitcher
                 }
             }
 
-            return new Palette(data.Values.ToList());
+            return new Palette(data);
+        }
+
+        public void Remove(Color color, int count)
+        {
+            this.PixelCount -= count;
+
+            var removedColorInfo = palette[color];
+            if (removedColorInfo.Count == count)
+            {
+                palette.Remove(color);
+                removedColorInfo.Brush.Dispose();
+            }
+            else
+            {
+                removedColorInfo.Dec(count);
+            }
         }
 
         public void Dispose()
         {
-            foreach (var brush in palette.Select(i => i.Brush))
+            foreach (var brush in palette.Values.Select(i => i.Brush))
             {
                 brush.Dispose();
             }

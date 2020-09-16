@@ -38,10 +38,13 @@
             this.heightRuler = new System.Windows.Forms.PictureBox();
             this.fileName = new System.Windows.Forms.Label();
             this.actualSize = new System.Windows.Forms.Button();
+            this.setBackgroundButton = new System.Windows.Forms.Button();
+            this.backgroundColor = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.zoomSlider)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.canvas)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.widthRuler)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.heightRuler)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.backgroundColor)).BeginInit();
             this.SuspendLayout();
             // 
             // zoomSlider
@@ -89,9 +92,9 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.colorListBox.FormattingEnabled = true;
             this.colorListBox.ItemHeight = 14;
-            this.colorListBox.Location = new System.Drawing.Point(12, 38);
+            this.colorListBox.Location = new System.Drawing.Point(12, 58);
             this.colorListBox.Name = "colorListBox";
-            this.colorListBox.Size = new System.Drawing.Size(145, 620);
+            this.colorListBox.Size = new System.Drawing.Size(145, 158);
             this.colorListBox.TabIndex = 4;
             this.colorListBox.SelectedIndexChanged += new System.EventHandler(this.colorListBox_SelectedIndexChanged);
             // 
@@ -143,11 +146,31 @@
             this.actualSize.UseVisualStyleBackColor = true;
             this.actualSize.Click += new System.EventHandler(this.actualSize_Click);
             // 
+            // setBackgroundButton
+            // 
+            this.setBackgroundButton.Location = new System.Drawing.Point(12, 222);
+            this.setBackgroundButton.Name = "setBackgroundButton";
+            this.setBackgroundButton.Size = new System.Drawing.Size(117, 23);
+            this.setBackgroundButton.TabIndex = 10;
+            this.setBackgroundButton.Text = "Set Background";
+            this.setBackgroundButton.UseVisualStyleBackColor = true;
+            this.setBackgroundButton.Click += new System.EventHandler(this.setBackgroundButton_Click);
+            // 
+            // backgroundColor
+            // 
+            this.backgroundColor.Location = new System.Drawing.Point(135, 222);
+            this.backgroundColor.Name = "backgroundColor";
+            this.backgroundColor.Size = new System.Drawing.Size(23, 23);
+            this.backgroundColor.TabIndex = 11;
+            this.backgroundColor.TabStop = false;
+            // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1101, 679);
+            this.Controls.Add(this.backgroundColor);
+            this.Controls.Add(this.setBackgroundButton);
             this.Controls.Add(this.actualSize);
             this.Controls.Add(this.fileName);
             this.Controls.Add(this.heightRuler);
@@ -165,6 +188,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.canvas)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.widthRuler)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.heightRuler)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.backgroundColor)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -187,6 +211,8 @@
         private System.Windows.Forms.PictureBox heightRuler;
         private System.Windows.Forms.Label fileName;
         private System.Windows.Forms.Button actualSize;
+        private System.Windows.Forms.Button setBackgroundButton;
+        private System.Windows.Forms.PictureBox backgroundColor;
     }
 }
 
