@@ -11,7 +11,9 @@ namespace Stitcher
     {
         Bitmap[] scaledImages;
         Palette palette;
+        RulerDrawer rulerDrawer;
         Color? selectedBackgroundColor;
+        string pixelDimensionString;
 
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
         static readonly string testImagePath2 = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
@@ -29,7 +31,7 @@ namespace Stitcher
             colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
             colorListBox.DrawItem += DrawColorForList;
             canvas.MouseWheel += CanvasMouseWheelHandler;
-            ResizeEnd += (_, __) => DrawRulers();
+            ResizeEnd += (_, __) => { InitializeRulerDrawer(); DrawRulers(); };
         }
 
         private void LoadImage(string path)
@@ -50,17 +52,16 @@ namespace Stitcher
 
             var image = new Bitmap(path);
             scaledImages[0] = image;
-            AnalyzeImage(image);
+            pixelDimensionString = $"{image.Height} H, {image.Width} W";
+            dimensionsLabel.Text = pixelDimensionString;
+            palette = Palette.FromBitmap(image);
+            InitializeRulerDrawer();
+            InitializeColorListBox();
             DisplayScaledImage();
         }
 
-        private void AnalyzeImage(Bitmap b)
-        {
-            dimensionsLabel.Text = $"{b.Height} H, {b.Width} W";
-
-            palette = Palette.FromBitmap(b);
-            InitializeColorListBox();
-        }
+        private void InitializeRulerDrawer() =>
+            rulerDrawer = RulerDrawer.FromComponentSizes(scaledImages[0].Size, heightRuler.Size, widthRuler.Size);
 
         private void InitializeColorListBox() // FIXME: ObservableCollection?
         {
@@ -107,59 +108,23 @@ namespace Stitcher
             return scaledImage;
         }
 
-        const int bigTickLength = 5;
-        const int bigTickInterval = 10;
-        const int littleTickLength = 2;
-
-        private void DrawHeightRuler(int maxHeight)
+        private void DrawRulers(Size? actualSize = null)
         {
             heightRuler.Image?.Dispose();
-
-            var image = new Bitmap(width: heightRuler.Width, height: heightRuler.Height);
-            using (var graphics = Graphics.FromImage(image))
-            {
-                graphics.Clear(DefaultBackColor);
-
-                var x1Little = heightRuler.Width - littleTickLength;
-                var x1Big = heightRuler.Width - bigTickLength;
-                var x2 = heightRuler.Width;
-                for (var y = 0; y <= maxHeight; y += ScalingFactor)
-                {
-                   graphics.DrawLine(Pens.Black, y % bigTickInterval == 0 ? x1Big : x1Little, y, x2, y);
-                }
-            }
-
-            heightRuler.Image = image;
-        }
-
-        private void DrawWidthRuler(int maxWidth)
-        {
             widthRuler.Image?.Dispose();
 
-            var image = new Bitmap(width: widthRuler.Width, height: widthRuler.Height);
-            using (var graphics = Graphics.FromImage(image))
+            (Bitmap heightRuler, Bitmap widthRuler) rulerImages;
+            if (actualSize != null)
             {
-                graphics.Clear(DefaultBackColor);
-
-                var y1Little = widthRuler.Height - littleTickLength;
-                var y1Big = widthRuler.Height - bigTickLength;
-                var y2 = widthRuler.Height;
-                for (var x = 0; x <= maxWidth; x += ScalingFactor)
-                {
-                    graphics.DrawLine(Pens.Black, x, x % bigTickInterval == 0 ? y1Big : y1Little, x, y2);
-                }
+                rulerImages = rulerDrawer.ActualSize(actualSize.Value);
+            }
+            else
+            {
+                rulerImages = rulerDrawer.ToScale(ScalingFactor);
             }
 
-            widthRuler.Image = image;
-        }
-
-        private void DrawRulers()
-        {
-            if (canvas.Image != null)
-            {
-                DrawHeightRuler(canvas.Image.Height);
-                DrawWidthRuler(canvas.Image.Width);
-            }
+            heightRuler.Image = rulerImages.heightRuler;
+            widthRuler.Image = rulerImages.widthRuler;
         }
 
         private void SetZoom()
@@ -298,31 +263,15 @@ namespace Stitcher
             }
         }
 
-
-        const float monitorPixelsPerInch = 92.0f;
-        const float fabricSquaresPerInch = 14.0f;
-        const float monitorPixelsPerFabricSquare = monitorPixelsPerInch / fabricSquaresPerInch;
+        public const int monitorPixelsPerInch = 92;
+        const int fabricSquaresPerInch = 14;
+        const float monitorPixelsPerFabricSquare = (float)monitorPixelsPerInch / (float)fabricSquaresPerInch;
 
         static readonly string actualSizeCanvasName = "actualSizeCanvas";
         private bool ActualSizeState = false;
-        private SaveState ScaledState;
 
-        class SaveState
+        private Size MakeActualSizeImage()
         {
-            public Image WidthRulerImage;
-            public Image HeightRulerImage;
-            public string DimensionText;
-        }
-
-        private (float width, float height) MakeActualSizeImage()
-        {
-            ScaledState = new SaveState
-            {
-                WidthRulerImage = widthRuler.Image,
-                HeightRulerImage = heightRuler.Image,
-                DimensionText = dimensionsLabel.Text,
-            };
-
             var actualSizeCanvas = new PictureBox
             {
                 Name = actualSizeCanvasName,
@@ -332,72 +281,44 @@ namespace Stitcher
 
             var originalImage = scaledImages[0];
 
-            var actualWidth = originalImage.Width * monitorPixelsPerFabricSquare;
-            var actualHeight = originalImage.Height * monitorPixelsPerFabricSquare;
+            var actualSize = new Size(
+                width: (int)(originalImage.Width * monitorPixelsPerFabricSquare),
+                height: (int)(originalImage.Height * monitorPixelsPerFabricSquare)
+            );
 
-            actualSizeCanvas.Image = new Bitmap(scaledImages[0], width: (int)actualWidth, height: (int)actualHeight);
+            actualSizeCanvas.Image = new Bitmap(scaledImages[0], actualSize);
             this.Controls.Add(actualSizeCanvas);
-            return (width: actualWidth, height: actualHeight);
+            return actualSize;
         }
 
-        private void MakeActualSizeRulers()
+        private string ActualSizeInInches(Size actualSize)
         {
-            var image = new Bitmap(width: heightRuler.Width, height: heightRuler.Height);
-            using (var graphics = Graphics.FromImage(image))
-            {
-                graphics.Clear(DefaultBackColor);
-
-                var x1Big = heightRuler.Width - bigTickLength;
-                var x2 = heightRuler.Width;
-                for (var y = 0.0f; y <= heightRuler.Height; y += monitorPixelsPerInch)
-                {
-                    graphics.DrawLine(Pens.Black, x1Big, y, x2, y);
-                }
-            }
-            heightRuler.Image = image;
-
-            image = new Bitmap(width: widthRuler.Width, height: widthRuler.Height);
-            using (var graphics = Graphics.FromImage(image))
-            {
-                graphics.Clear(DefaultBackColor);
-
-                var y1Big = widthRuler.Height - bigTickLength;
-                var y2 = widthRuler.Height;
-                for (var x = 0.0f; x <= widthRuler.Width; x += monitorPixelsPerInch)
-                {
-                    graphics.DrawLine(Pens.Black, x, y1Big, x, y2);
-                }
-            }
-
-            widthRuler.Image = image;
+            var height = (float)actualSize.Height / monitorPixelsPerInch;
+            var width = (float)actualSize.Width / monitorPixelsPerInch;
+            return $"{Math.Round(height, 1)}\" H, {Math.Round(width, 1)}\" W";
         }
 
         private void MakeActualSize()
         {
             ActualSizeState = true;
-            actualSize.Text = "Exit";
+            actualSizeButton.Text = "Exit";
 
-            var size = MakeActualSizeImage();
-            MakeActualSizeRulers();
-            dimensionsLabel.Text = $"{Math.Round(size.height / monitorPixelsPerInch, 1)}\" H, {Math.Round(size.width / monitorPixelsPerInch, 1)}\" W";
+            var actualSize = MakeActualSizeImage();
+            DrawRulers(actualSize);
+            dimensionsLabel.Text = ActualSizeInInches(actualSize);
         }
 
         private void RestoreScaledSize()
         {
             ActualSizeState = false;
-            actualSize.Text = "To Scale";
+            actualSizeButton.Text = "To Scale";
 
             var pictureBox = (PictureBox)Controls[actualSizeCanvasName];
             Controls.RemoveByKey(actualSizeCanvasName);
             pictureBox.Image.Dispose();
 
-            widthRuler.Image.Dispose();
-            widthRuler.Image = ScaledState.WidthRulerImage;
-
-            heightRuler.Image.Dispose();
-            heightRuler.Image = ScaledState.HeightRulerImage;
-
-            dimensionsLabel.Text = ScaledState.DimensionText;
+            DrawRulers();
+            dimensionsLabel.Text = pixelDimensionString;
         }
 
         private void actualSize_Click(object sender, EventArgs e)

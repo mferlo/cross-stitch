@@ -37,7 +37,7 @@
             this.dimensionsLabel = new System.Windows.Forms.Label();
             this.heightRuler = new System.Windows.Forms.PictureBox();
             this.fileName = new System.Windows.Forms.Label();
-            this.actualSize = new System.Windows.Forms.Button();
+            this.actualSizeButton = new System.Windows.Forms.Button();
             this.setBackgroundButton = new System.Windows.Forms.Button();
             this.backgroundColor = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.zoomSlider)).BeginInit();
@@ -88,7 +88,7 @@
             // 
             // colorListBox
             // 
-            this.colorListBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.colorListBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.colorListBox.FormattingEnabled = true;
             this.colorListBox.ItemHeight = 14;
@@ -138,13 +138,13 @@
             // 
             // actualSize
             // 
-            this.actualSize.Location = new System.Drawing.Point(977, 9);
-            this.actualSize.Name = "actualSize";
-            this.actualSize.Size = new System.Drawing.Size(92, 23);
-            this.actualSize.TabIndex = 9;
-            this.actualSize.Text = "Actual Size";
-            this.actualSize.UseVisualStyleBackColor = true;
-            this.actualSize.Click += new System.EventHandler(this.actualSize_Click);
+            this.actualSizeButton.Location = new System.Drawing.Point(977, 9);
+            this.actualSizeButton.Name = "actualSize";
+            this.actualSizeButton.Size = new System.Drawing.Size(92, 23);
+            this.actualSizeButton.TabIndex = 9;
+            this.actualSizeButton.Text = "Actual Size";
+            this.actualSizeButton.UseVisualStyleBackColor = true;
+            this.actualSizeButton.Click += new System.EventHandler(this.actualSize_Click);
             // 
             // setBackgroundButton
             // 
@@ -171,7 +171,7 @@
             this.ClientSize = new System.Drawing.Size(1101, 679);
             this.Controls.Add(this.backgroundColor);
             this.Controls.Add(this.setBackgroundButton);
-            this.Controls.Add(this.actualSize);
+            this.Controls.Add(this.actualSizeButton);
             this.Controls.Add(this.fileName);
             this.Controls.Add(this.heightRuler);
             this.Controls.Add(this.dimensionsLabel);
@@ -210,7 +210,7 @@
         private System.Windows.Forms.Label dimensionsLabel;
         private System.Windows.Forms.PictureBox heightRuler;
         private System.Windows.Forms.Label fileName;
-        private System.Windows.Forms.Button actualSize;
+        private System.Windows.Forms.Button actualSizeButton;
         private System.Windows.Forms.Button setBackgroundButton;
         private System.Windows.Forms.PictureBox backgroundColor;
     }
