@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,9 +15,10 @@ namespace Stitcher
         RulerDrawer rulerDrawer;
         Color? selectedBackgroundColor;
         string pixelDimensionString;
+        string absoluteFileName;
 
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
-        static readonly string testImagePath2 = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
+        static readonly string testImage = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
 
         int ScalingIndex => zoomSlider.Value;
         int ScalingFactor => 1 << zoomSlider.Value;
@@ -26,7 +28,7 @@ namespace Stitcher
             InitializeComponent();
             scaledImages = new Bitmap[zoomSlider.Maximum + 1];
 
-            LoadImage(testImagePath2);
+            LoadImage(testImage);
 
             colorListBox.DrawMode = DrawMode.OwnerDrawVariable;
             colorListBox.DrawItem += DrawColorForList;
@@ -34,8 +36,13 @@ namespace Stitcher
             ResizeEnd += (_, __) => { InitializeRulerDrawer(); DrawRulers(); };
         }
 
-        private void LoadImage(string path)
+        private void LoadImage(string absoluteFileName)
         {
+            if (!File.Exists(absoluteFileName))
+            {
+                return;
+            }
+
             zoomSlider.Value = 0;
             selectedBackgroundColor = null;
             backgroundColor.BackColor = DefaultBackColor;
@@ -48,9 +55,10 @@ namespace Stitcher
 
             palette?.Dispose();
 
-            fileName.Text = path.Split(System.IO.Path.DirectorySeparatorChar).Last();
+            this.absoluteFileName = absoluteFileName;
+            fileNameLabel.Text = Path.GetFileName(absoluteFileName);
 
-            var image = new Bitmap(path);
+            var image = new Bitmap(absoluteFileName);
             scaledImages[0] = image;
             pixelDimensionString = $"{image.Height} H, {image.Width} W";
             dimensionsLabel.Text = pixelDimensionString;
@@ -441,6 +449,24 @@ namespace Stitcher
 
             // Undo logic isn't worth doing. User can reload the file to undo/change the bg color
             setBackgroundButton.Enabled = false; 
+        }
+
+        private void printButton_Click(object sendser, EventArgs e)
+        {
+            // TODO: maybe "don't deal with printing per se, just create a PDF" is more trouble than just printing?
+
+            // TODO: standard save dialogue prompt, and/or save to temp file & auto-open pdf viewer
+            // TODO: feedback in UI (or irrelevant given above?)
+
+            var directory = Path.GetDirectoryName(absoluteFileName);
+            var name = Path.GetFileNameWithoutExtension(absoluteFileName) + ".pdf";
+
+            var pdfFile = Path.Combine(directory, name);
+
+            using (var writer = new BinaryWriter(File.OpenWrite(pdfFile)))
+            {
+                PdfGenerator.Create(writer, null);
+            }
         }
     }
 }

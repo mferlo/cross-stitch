@@ -36,10 +36,11 @@
             this.widthRuler = new System.Windows.Forms.PictureBox();
             this.dimensionsLabel = new System.Windows.Forms.Label();
             this.heightRuler = new System.Windows.Forms.PictureBox();
-            this.fileName = new System.Windows.Forms.Label();
+            this.fileNameLabel = new System.Windows.Forms.Label();
             this.actualSizeButton = new System.Windows.Forms.Button();
             this.setBackgroundButton = new System.Windows.Forms.Button();
             this.backgroundColor = new System.Windows.Forms.PictureBox();
+            this.printButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.zoomSlider)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.canvas)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.widthRuler)).BeginInit();
@@ -58,9 +59,9 @@
             // 
             // loadButton
             // 
-            this.loadButton.Location = new System.Drawing.Point(163, 11);
+            this.loadButton.Location = new System.Drawing.Point(163, 10);
             this.loadButton.Name = "loadButton";
-            this.loadButton.Size = new System.Drawing.Size(75, 21);
+            this.loadButton.Size = new System.Drawing.Size(75, 22);
             this.loadButton.TabIndex = 1;
             this.loadButton.Text = "Load";
             this.loadButton.UseVisualStyleBackColor = true;
@@ -88,8 +89,6 @@
             // 
             // colorListBox
             // 
-            this.colorListBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top) 
-            | System.Windows.Forms.AnchorStyles.Left)));
             this.colorListBox.FormattingEnabled = true;
             this.colorListBox.ItemHeight = 14;
             this.colorListBox.Location = new System.Drawing.Point(12, 58);
@@ -111,7 +110,7 @@
             // dimensionsLabel
             // 
             this.dimensionsLabel.AutoSize = true;
-            this.dimensionsLabel.Location = new System.Drawing.Point(244, 14);
+            this.dimensionsLabel.Location = new System.Drawing.Point(325, 14);
             this.dimensionsLabel.Name = "dimensionsLabel";
             this.dimensionsLabel.Size = new System.Drawing.Size(28, 14);
             this.dimensionsLabel.TabIndex = 6;
@@ -127,20 +126,20 @@
             this.heightRuler.TabIndex = 7;
             this.heightRuler.TabStop = false;
             // 
-            // fileName
+            // fileNameLabel
             // 
-            this.fileName.AutoSize = true;
-            this.fileName.Location = new System.Drawing.Point(359, 14);
-            this.fileName.Name = "fileName";
-            this.fileName.Size = new System.Drawing.Size(63, 14);
-            this.fileName.TabIndex = 8;
-            this.fileName.Text = "fileName";
+            this.fileNameLabel.AutoSize = true;
+            this.fileNameLabel.Location = new System.Drawing.Point(471, 14);
+            this.fileNameLabel.Name = "fileName";
+            this.fileNameLabel.Size = new System.Drawing.Size(63, 14);
+            this.fileNameLabel.TabIndex = 8;
+            this.fileNameLabel.Text = "fileName";
             // 
-            // actualSize
+            // actualSizeButton
             // 
-            this.actualSizeButton.Location = new System.Drawing.Point(977, 9);
-            this.actualSizeButton.Name = "actualSize";
-            this.actualSizeButton.Size = new System.Drawing.Size(92, 23);
+            this.actualSizeButton.Location = new System.Drawing.Point(977, 10);
+            this.actualSizeButton.Name = "actualSizeButton";
+            this.actualSizeButton.Size = new System.Drawing.Size(92, 22);
             this.actualSizeButton.TabIndex = 9;
             this.actualSizeButton.Text = "Actual Size";
             this.actualSizeButton.UseVisualStyleBackColor = true;
@@ -164,15 +163,26 @@
             this.backgroundColor.TabIndex = 11;
             this.backgroundColor.TabStop = false;
             // 
+            // printButton
+            // 
+            this.printButton.Location = new System.Drawing.Point(244, 10);
+            this.printButton.Name = "printButton";
+            this.printButton.Size = new System.Drawing.Size(75, 22);
+            this.printButton.TabIndex = 12;
+            this.printButton.Text = "Print";
+            this.printButton.UseVisualStyleBackColor = true;
+            this.printButton.Click += new System.EventHandler(this.printButton_Click);
+            // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1101, 679);
+            this.Controls.Add(this.printButton);
             this.Controls.Add(this.backgroundColor);
             this.Controls.Add(this.setBackgroundButton);
             this.Controls.Add(this.actualSizeButton);
-            this.Controls.Add(this.fileName);
+            this.Controls.Add(this.fileNameLabel);
             this.Controls.Add(this.heightRuler);
             this.Controls.Add(this.dimensionsLabel);
             this.Controls.Add(this.widthRuler);
@@ -209,10 +219,11 @@
         private System.Windows.Forms.PictureBox widthRuler;
         private System.Windows.Forms.Label dimensionsLabel;
         private System.Windows.Forms.PictureBox heightRuler;
-        private System.Windows.Forms.Label fileName;
+        private System.Windows.Forms.Label fileNameLabel;
         private System.Windows.Forms.Button actualSizeButton;
         private System.Windows.Forms.Button setBackgroundButton;
         private System.Windows.Forms.PictureBox backgroundColor;
+        private System.Windows.Forms.Button printButton;
     }
 }
 
