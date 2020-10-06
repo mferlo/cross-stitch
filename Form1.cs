@@ -11,6 +11,8 @@ namespace Stitcher
     public partial class Form : System.Windows.Forms.Form
     {
         Bitmap[] scaledImages;
+        Bitmap[] gridImages;
+
         Palette palette;
         RulerDrawer rulerDrawer;
         Color? selectedBackgroundColor;
@@ -27,6 +29,7 @@ namespace Stitcher
         {
             InitializeComponent();
             scaledImages = new Bitmap[zoomSlider.Maximum + 1];
+            gridImages = new Bitmap[zoomSlider.Maximum + 1];
 
             LoadImage(testImage);
 
@@ -36,7 +39,7 @@ namespace Stitcher
             ResizeEnd += (_, __) => { InitializeRulerDrawer(); DrawRulers(); };
         }
 
-        private void LoadImage(string absoluteFileName)
+        void LoadImage(string absoluteFileName)
         {
             if (!File.Exists(absoluteFileName))
             {
@@ -51,6 +54,9 @@ namespace Stitcher
             {
                 scaledImages[i]?.Dispose();
                 scaledImages[i] = null;
+
+                gridImages[i]?.Dispose();
+                gridImages[i] = null;
             }
 
             palette?.Dispose();
@@ -68,10 +74,10 @@ namespace Stitcher
             DisplayScaledImage();
         }
 
-        private void InitializeRulerDrawer() =>
+        void InitializeRulerDrawer() =>
             rulerDrawer = RulerDrawer.FromComponentSizes(scaledImages[0].Size, heightRuler.Size, widthRuler.Size);
 
-        private void InitializeColorListBox() // FIXME: ObservableCollection?
+        void InitializeColorListBox() // FIXME: ObservableCollection?
         {
             colorListBox.Items.Clear();
             colorListBox.Items.Add(nullColor);
@@ -83,7 +89,7 @@ namespace Stitcher
             setBackgroundButton.Enabled = false;
         }
 
-        private Bitmap GenerateScaledImage()
+        Bitmap GenerateScaledImage()
         {
             var nativeImage = scaledImages[0];
             var scaledImage = new Bitmap(width: nativeImage.Width * ScalingFactor, height: nativeImage.Height * ScalingFactor);
@@ -116,7 +122,7 @@ namespace Stitcher
             return scaledImage;
         }
 
-        private void DrawRulers(Size? actualSize = null)
+        void DrawRulers(Size? actualSize = null)
         {
             heightRuler.Image?.Dispose();
             widthRuler.Image?.Dispose();
@@ -135,7 +141,12 @@ namespace Stitcher
             widthRuler.Image = rulerImages.widthRuler;
         }
 
-        private void SetZoom()
+        void DrawGrid()
+        {
+
+        }
+
+        void SetZoom()
         {
             zoomLabel.Text = $"{100 * (1 << ScalingIndex)}%";
             if (scaledImages[ScalingIndex] == null)
@@ -145,13 +156,14 @@ namespace Stitcher
             DisplayScaledImage();
         }
 
-        private void DisplayScaledImage()
+        void DisplayScaledImage()
         {
             DisplayMaybeHighlightedImage(scaledImages[ScalingIndex]);
             DrawRulers();
+            DrawGrid();
         }
 
-        private void DisplayMaybeHighlightedImage(Bitmap image)
+        void DisplayMaybeHighlightedImage(Bitmap image)
         {
             if (!scaledImages.Contains(canvas.Image))
             {
@@ -187,7 +199,7 @@ namespace Stitcher
         // Color List Support
         // TODO: Allow multi-select
 
-        private Color? SelectedColor()
+        Color? SelectedColor()
         {
             var selected = colorListBox.SelectedItem;
             if (selected == null || selected == nullColor)
@@ -201,13 +213,13 @@ namespace Stitcher
         }
 
         const int swatchWidth = 20;
-        private string B2H(byte b) => b.ToString("X2");
-        private string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
+        string B2H(byte b) => b.ToString("X2");
+        string ToHexString(Color c) => $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
 
-        private string Format(bool isSelected, string color, int count) =>
+        string Format(bool isSelected, string color, int count) =>
             $"{(isSelected ? "*" : " ")} {color} ({count,5})";
 
-        private void DrawColorForList(object sender, DrawItemEventArgs e)
+        void DrawColorForList(object sender, DrawItemEventArgs e)
         {
             var b = e.Bounds;
             var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
@@ -228,7 +240,7 @@ namespace Stitcher
             e.Graphics.DrawString(colorString, colorListBox.Font, Brushes.Black, b.X + swatchWidth, b.Y);
         }
 
-        private void CanvasMouseWheelHandler(object sender, MouseEventArgs e)
+        void CanvasMouseWheelHandler(object sender, MouseEventArgs e)
         {
             var result = zoomSlider.Value + e.Delta / 120;
             if (zoomSlider.Minimum <= result && result <= zoomSlider.Maximum)
@@ -237,17 +249,17 @@ namespace Stitcher
             }
         }
 
-        private void colorListBox_SelectedIndexChanged(object sender, EventArgs e)
+        void colorListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             setBackgroundButton.Enabled = SelectedColor() != null && selectedBackgroundColor == null;
             DisplayScaledImage();
         }
 
-        private void zoomSlider_ValueChanged(object sender, EventArgs e) =>
+        void zoomSlider_ValueChanged(object sender, EventArgs e) =>
             SetZoom();
 
         // TODO: drag and drop support
-        private void loadButton_Click(object sender, EventArgs e)
+        void loadButton_Click(object sender, EventArgs e)
         {
             string path;
             using (var openFileDialog = new OpenFileDialog())
@@ -275,10 +287,10 @@ namespace Stitcher
         const int fabricSquaresPerInch = 14;
         const float monitorPixelsPerFabricSquare = (float)monitorPixelsPerInch / (float)fabricSquaresPerInch;
 
-        static readonly string actualSizeCanvasName = "actualSizeCanvas";
-        private bool ActualSizeState = false;
+        const string actualSizeCanvasName = "actualSizeCanvas";
+        bool ActualSizeState = false;
 
-        private Size MakeActualSizeImage()
+        Size MakeActualSizeImage()
         {
             var actualSizeCanvas = new PictureBox
             {
@@ -299,14 +311,14 @@ namespace Stitcher
             return actualSize;
         }
 
-        private string ActualSizeInInches(Size actualSize)
+        string ActualSizeInInches(Size actualSize)
         {
             var height = (float)actualSize.Height / monitorPixelsPerInch;
             var width = (float)actualSize.Width / monitorPixelsPerInch;
             return $"{Math.Round(height, 1)}\" H, {Math.Round(width, 1)}\" W";
         }
 
-        private void MakeActualSize()
+        void MakeActualSize()
         {
             ActualSizeState = true;
             actualSizeButton.Text = "Exit";
@@ -316,7 +328,7 @@ namespace Stitcher
             dimensionsLabel.Text = ActualSizeInInches(actualSize);
         }
 
-        private void RestoreScaledSize()
+        void RestoreScaledSize()
         {
             ActualSizeState = false;
             actualSizeButton.Text = "To Scale";
@@ -329,7 +341,7 @@ namespace Stitcher
             dimensionsLabel.Text = pixelDimensionString;
         }
 
-        private void actualSize_Click(object sender, EventArgs e)
+        void actualSize_Click(object sender, EventArgs e)
         {
             if (scaledImages[0] == null)
             {
@@ -394,7 +406,7 @@ namespace Stitcher
         IEnumerable<(int, int)> ValidNeighbors(Size size, (int, int) pixel) =>
             Neighbors(pixel).Where(p => ValidPixel(size, p));
 
-        private int RemoveBackgroundColor(Color color)
+        int RemoveBackgroundColor(Color color)
         {
             var image = scaledImages[0];
 
@@ -426,7 +438,7 @@ namespace Stitcher
             return backgroundPixels.Count;
         }
 
-        private void setBackgroundButton_Click(object sender, EventArgs e)
+        void setBackgroundButton_Click(object sender, EventArgs e)
         {
             var bgColor = SelectedColor().Value;
             backgroundColor.BackColor = bgColor;
@@ -451,7 +463,7 @@ namespace Stitcher
             setBackgroundButton.Enabled = false; 
         }
 
-        private void printButton_Click(object sendser, EventArgs e)
+        void printButton_Click(object sendser, EventArgs e)
         {
             // TODO: maybe "don't deal with printing per se, just create a PDF" is more trouble than just printing?
 
@@ -467,6 +479,11 @@ namespace Stitcher
             {
                 PdfGenerator.Create(writer, null);
             }
+        }
+
+        void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

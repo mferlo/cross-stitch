@@ -41,6 +41,7 @@
             this.setBackgroundButton = new System.Windows.Forms.Button();
             this.backgroundColor = new System.Windows.Forms.PictureBox();
             this.printButton = new System.Windows.Forms.Button();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.zoomSlider)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.canvas)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.widthRuler)).BeginInit();
@@ -53,7 +54,7 @@
             this.zoomSlider.Location = new System.Drawing.Point(12, 11);
             this.zoomSlider.Maximum = 3;
             this.zoomSlider.Name = "zoomSlider";
-            this.zoomSlider.Size = new System.Drawing.Size(104, 45);
+            this.zoomSlider.Size = new System.Drawing.Size(50, 45);
             this.zoomSlider.TabIndex = 0;
             this.zoomSlider.ValueChanged += new System.EventHandler(this.zoomSlider_ValueChanged);
             // 
@@ -81,7 +82,7 @@
             // zoomLabel
             // 
             this.zoomLabel.AutoSize = true;
-            this.zoomLabel.Location = new System.Drawing.Point(122, 14);
+            this.zoomLabel.Location = new System.Drawing.Point(59, 14);
             this.zoomLabel.Name = "zoomLabel";
             this.zoomLabel.Size = new System.Drawing.Size(35, 14);
             this.zoomLabel.TabIndex = 3;
@@ -130,7 +131,7 @@
             // 
             this.fileNameLabel.AutoSize = true;
             this.fileNameLabel.Location = new System.Drawing.Point(471, 14);
-            this.fileNameLabel.Name = "fileName";
+            this.fileNameLabel.Name = "fileNameLabel";
             this.fileNameLabel.Size = new System.Drawing.Size(63, 14);
             this.fileNameLabel.TabIndex = 8;
             this.fileNameLabel.Text = "fileName";
@@ -173,11 +174,23 @@
             this.printButton.UseVisualStyleBackColor = true;
             this.printButton.Click += new System.EventHandler(this.printButton_Click);
             // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(100, 13);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(54, 18);
+            this.checkBox1.TabIndex = 13;
+            this.checkBox1.Text = "Grid";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1101, 679);
+            this.Controls.Add(this.checkBox1);
             this.Controls.Add(this.printButton);
             this.Controls.Add(this.backgroundColor);
             this.Controls.Add(this.setBackgroundButton);
@@ -224,6 +237,7 @@
         private System.Windows.Forms.Button setBackgroundButton;
         private System.Windows.Forms.PictureBox backgroundColor;
         private System.Windows.Forms.Button printButton;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }
 

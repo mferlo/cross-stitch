@@ -62,6 +62,17 @@ namespace Stitcher
             return (heightImage, widthImage);
         }
 
+        private Bitmap DrawGrid(int scalingFactor)
+        {
+            var image = new Bitmap(width: unscaledImage.Width * scalingFactor, height: unscaledImage.Height * scalingFactor);
+            using (var graphics = Graphics.FromImage(image))
+            {
+                graphics.Clear(Color.Transparent);
+                graphics.DrawLine(Pens.Black, 0, 0, 42, 42);
+            }
+            return image;
+        }
+
 
         private Bitmap DrawHeightRuler(int scalingFactor)
         {
