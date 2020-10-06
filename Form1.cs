@@ -11,7 +11,8 @@ namespace Stitcher
     public partial class Form : System.Windows.Forms.Form
     {
         Bitmap[] scaledImages;
-        Bitmap[] gridImages;
+        Bitmap gridImage8x;
+        const string gridImageName = "gridImage";
 
         Palette palette;
         RulerDrawer rulerDrawer;
@@ -29,7 +30,6 @@ namespace Stitcher
         {
             InitializeComponent();
             scaledImages = new Bitmap[zoomSlider.Maximum + 1];
-            gridImages = new Bitmap[zoomSlider.Maximum + 1];
 
             LoadImage(testImage);
 
@@ -37,6 +37,9 @@ namespace Stitcher
             colorListBox.DrawItem += DrawColorForList;
             canvas.MouseWheel += CanvasMouseWheelHandler;
             ResizeEnd += (_, __) => { InitializeRulerDrawer(); DrawRulers(); };
+
+            // FIXME: enable when functional
+            printButton.Enabled = false;
         }
 
         void LoadImage(string absoluteFileName)
@@ -54,11 +57,9 @@ namespace Stitcher
             {
                 scaledImages[i]?.Dispose();
                 scaledImages[i] = null;
-
-                gridImages[i]?.Dispose();
-                gridImages[i] = null;
             }
 
+            gridImage8x?.Dispose();
             palette?.Dispose();
 
             this.absoluteFileName = absoluteFileName;
@@ -143,12 +144,33 @@ namespace Stitcher
 
         void DrawGrid()
         {
+            PictureBox gridBox;
+            if (canvas.Controls.ContainsKey(gridImageName))
+            {
+                gridBox = (PictureBox)canvas.Controls[gridImageName];
+            }
+            else
+            {
+                Console.WriteLine("Initializing Grid");
+                gridBox = new PictureBox
+                {
+                    Name = gridImageName,
+                    Size = canvas.Size,
+                    Visible = false,
+                    BackColor = Color.Transparent,
+                };
+                canvas.Controls.Add(gridBox);
+                
+                gridImage8x = rulerDrawer.DrawGrid(8);
+                gridBox.Image = gridImage8x;
+            }
 
+            gridBox.Visible = ScalingFactor == 8;
         }
 
         void SetZoom()
         {
-            zoomLabel.Text = $"{100 * (1 << ScalingIndex)}%";
+            zoomLabel.Text = $"{100 * ScalingFactor}%";
             if (scaledImages[ScalingIndex] == null)
             {
                 scaledImages[ScalingIndex] = GenerateScaledImage();
@@ -483,7 +505,7 @@ namespace Stitcher
 
         void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-
+            // Test: is UI OK without this toggle, and just auto-displaying it at 8x?
         }
     }
 }
