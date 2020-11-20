@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -38,8 +39,8 @@ namespace Stitcher
             canvas.MouseWheel += CanvasMouseWheelHandler;
             ResizeEnd += (_, __) => { InitializeRulerDrawer(); DrawRulers(); };
 
-            // FIXME: enable when functional
-            printButton.Enabled = false;
+            // FIXME: disable when no file?
+            // printButton.Enabled = false;
         }
 
         void LoadImage(string absoluteFileName)
@@ -492,15 +493,12 @@ namespace Stitcher
             // TODO: standard save dialogue prompt, and/or save to temp file & auto-open pdf viewer
             // TODO: feedback in UI (or irrelevant given above?)
 
+            var printableImage = Printer.CreatePrintableImage(scaledImages[0], palette);
+
             var directory = Path.GetDirectoryName(absoluteFileName);
-            var name = Path.GetFileNameWithoutExtension(absoluteFileName) + ".pdf";
+            var name = Path.GetFileNameWithoutExtension(absoluteFileName) + "_print.png";
 
-            var pdfFile = Path.Combine(directory, name);
-
-            using (var writer = new BinaryWriter(File.OpenWrite(pdfFile)))
-            {
-                PdfGenerator.Create(writer, null);
-            }
+            printableImage.Save(Path.Combine(directory, name), ImageFormat.Png);
         }
 
         void checkBox1_CheckedChanged(object sender, EventArgs e)
