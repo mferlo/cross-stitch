@@ -1,17 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 
 namespace Stitcher
 {
-    // FIXME: Add color legend & count
-    // FIXME: if landscape, rotate
-    // TODO: is 20x20 reasonable?
+    // FIXME: note every 10 ticks; add markers pointing to center of grid
+    // FIXME: try to name colors
+    // FIXME: automatically compose pieces for best printing
+    // FIXME: more grid symbols
 
     static class Printer
     {
+        private static readonly Font font = new Font("Calibri", 12);
+
         // Each square is 20x20. There is a 1-pixel line between each grid
         const int gridSquareSize = 20;
         const int gridLineSize = 1;
@@ -25,13 +27,34 @@ namespace Stitcher
 
         public static Image CreatePrintableImage(Bitmap image, Palette palette)
         {
+            var symbolPrinters = GetSymbolPrinters(palette);
 
+            var stitchGridImage = CreateStitchGridImage(image, symbolPrinters);
+            var colorInfoImage = CreateColorInfoImage(symbolPrinters, palette);
+
+            var spacing = 20;
+
+            // FIXME: compose pieces best printing (e.g., if wide, make landscape)
+            var result = new Bitmap(
+                width: Math.Max(stitchGridImage.Width, colorInfoImage.Width),
+                height: stitchGridImage.Height + colorInfoImage.Height + spacing
+            );
+
+            using (var graphics = Graphics.FromImage(result))
+            {
+                graphics.DrawImage(stitchGridImage, 0, 0);
+                graphics.DrawImage(colorInfoImage, 0, stitchGridImage.Height + spacing);
+            }
+
+            return result;
+        }
+
+        private static Bitmap CreateStitchGridImage(Bitmap image, Dictionary<Color, PrintSymbol> symbolPrinters)
+        {
             var result = new Bitmap(
                 width: image.Width * (gridSquareSize + 1) + 1,
                 height: image.Height * (gridSquareSize + 1) + 1
             );
-
-            var symbolPrinters = GetSymbolPrinters(palette);
 
             using (var graphics = Graphics.FromImage(result))
             {
@@ -42,9 +65,9 @@ namespace Stitcher
                 {
                     for (var y = 0; y < image.Height; y++)
                     {
-                        // FIXME better way to deal with background color
                         var pixel = image.GetPixel(x, y);
 
+                        // FIXME: better way to deal with background color
                         if (symbolPrinters.TryGetValue(pixel, out var sp))
                         {
                             sp(graphics, ToPrintCoord(x), ToPrintCoord(y));
@@ -53,7 +76,41 @@ namespace Stitcher
                 }
             }
 
-            return result;           
+            return result;
+        }
+
+        private static Bitmap CreateColorInfoImage(Dictionary<Color, PrintSymbol> symbolPrinters, Palette palette)
+        {
+            var result = new Bitmap(
+                width: 300,
+                height: (gridSquareSize + 1) * symbolPrinters.Count
+            );
+
+            var y = 0;
+
+            using (var graphics = Graphics.FromImage(result))
+            {
+                foreach (var colorInfo in palette.PaletteInfo.OrderByDescending(pi => pi.Count))
+                {
+                    var sp = symbolPrinters[colorInfo.Color];
+                    sp(graphics, 0, y);
+
+                    var colorString = $"{ColorName(colorInfo.Color)} ({colorInfo.Count})";
+
+                    graphics.DrawString(colorString, font, Brushes.Black, gridSquareSize + 5, y);
+
+                    y += gridSquareSize + 1;
+                }
+            }
+
+            return result;
+        }
+
+        private static string ColorName(Color c)
+        {
+            // FIXME: get actual name (or closest known name)
+            string B2H(byte b) => b.ToString("X2");
+            return $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
         }
 
         private static void DrawGrid(Graphics g, int width, int height)
@@ -138,8 +195,9 @@ namespace Stitcher
             graphics.FillPolygon(Brushes.Black, new[] { top, right, bottom, left });
         }
 
+        // Note: Deliberately not using Left(x) or Top(y) because it makes number too far right/down
         private static PrintSymbol MakePrinter(int symbol) =>
             (Graphics Graphics, int x, int y) =>
-                Graphics.DrawString(symbol.ToString(), SystemFonts.DefaultFont, Brushes.Black, (float)Left(x), (float)Top(y));
+                Graphics.DrawString(symbol.ToString(), font, Brushes.Black, x, y);
     }
 }
