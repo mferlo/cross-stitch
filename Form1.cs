@@ -152,7 +152,6 @@ namespace Stitcher
             }
             else
             {
-                Console.WriteLine("Initializing Grid");
                 gridBox = new PictureBox
                 {
                     Name = gridImageName,
