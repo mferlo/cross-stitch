@@ -6,7 +6,7 @@ using System.Linq;
 namespace Stitcher
 {
     // FIXME: note every 10 ticks; add markers pointing to center of grid
-    // FIXME: try to name colors
+    // FIXME: handle case where two colors have the same name
     // FIXME: automatically compose pieces for best printing
     // FIXME: more grid symbols
 
@@ -90,27 +90,21 @@ namespace Stitcher
 
             using (var graphics = Graphics.FromImage(result))
             {
+                graphics.FillRectangle(Brushes.White, 0, 0, result.Width, result.Height);
+
                 foreach (var colorInfo in palette.PaletteInfo.OrderByDescending(pi => pi.Count))
                 {
                     var sp = symbolPrinters[colorInfo.Color];
                     sp(graphics, 0, y);
 
-                    var colorString = $"{ColorName(colorInfo.Color)} ({colorInfo.Count})";
-
-                    graphics.DrawString(colorString, font, Brushes.Black, gridSquareSize + 5, y);
+                    var colorName = ColorHelper.NameOf(colorInfo.Color);
+                    graphics.DrawString($"{colorName} ({colorInfo.Count})", font, Brushes.Black, gridSquareSize + 5, y);
 
                     y += gridSquareSize + 1;
                 }
             }
 
             return result;
-        }
-
-        private static string ColorName(Color c)
-        {
-            // FIXME: get actual name (or closest known name)
-            string B2H(byte b) => b.ToString("X2");
-            return $"{B2H(c.R)}{B2H(c.G)}{B2H(c.B)}";
         }
 
         private static void DrawGrid(Graphics g, int width, int height)
