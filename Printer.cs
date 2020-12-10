@@ -121,24 +121,18 @@ namespace Stitcher
         }
 
         private static readonly IReadOnlyList<PrintSymbol> Printers =
-            new List<PrintSymbol>() { PrintX, PrintTriangle, PrintCircle, PrintCross, PrintDiamond };
+            new List<PrintSymbol>() { PrintX, PrintTriangle, PrintCircle, PrintCross, PrintInvertedTriangle };
 
         private static Dictionary<Color, PrintSymbol> GetSymbolPrinters(Palette palette)
         {
-            var result = new Dictionary<Color, PrintSymbol>();
-
             var colors = palette.PaletteInfo.OrderByDescending(pi => pi.Count).Select(pi => pi.Color).ToList();
+            var result = colors.Zip(Printers, (color, printer) => new { color, printer })
+                .ToDictionary(x => x.color, x => x.printer);
 
-            var printer = 0;
-            foreach (var color in colors.Take(Printers.Count))
-            {
-                result[color] = Printers[printer++];
-            }
-
-            printer = 1;
+            var number = 1;
             foreach (var color in colors.Skip(Printers.Count))
             {
-                result[color] = MakePrinter(printer++);
+                result[color] = MakeNumberPrinter(number++);
             }
 
             return result;
@@ -153,6 +147,7 @@ namespace Stitcher
         private static int Mid(int z) => z + gridSquareSize / 2;
 
         private static Pen BlackWide = new Pen(Color.Black, 3);
+        private static Pen WhiteWide = new Pen(Color.White, 3);
 
         private static void PrintX(Graphics graphics, int x, int y)
         {
@@ -176,22 +171,22 @@ namespace Stitcher
 
         private static void PrintCross(Graphics graphics, int x, int y)
         {
-            graphics.DrawLine(BlackWide, Mid(x), Top(y), Mid(x), Bottom(y));
-            graphics.DrawLine(BlackWide, Left(x), Mid(y), Right(x), Mid(y));
+            graphics.FillRectangle(Brushes.Black, x, y, gridSquareSize, gridSquareSize);
+            graphics.DrawLine(WhiteWide, Mid(x), Top(y), Mid(x), Bottom(y));
+            graphics.DrawLine(WhiteWide, Left(x), Mid(y), Right(x), Mid(y));
         }
 
-        private static void PrintDiamond(Graphics graphics, int x, int y)
+        private static void PrintInvertedTriangle(Graphics graphics, int x, int y)
         {
-            var top = new Point(Mid(x), Top(y));
+            var left = new Point(Left(x), Top(y));
+            var right = new Point(Right(x), Top(y));
             var bottom = new Point(Mid(x), Bottom(y));
-            var left = new Point(Left(x), Mid(y));
-            var right = new Point(Right(x), Mid(y));
-            graphics.FillPolygon(Brushes.Black, new[] { top, right, bottom, left });
+            graphics.FillPolygon(Brushes.Black, new[] { right, bottom, left });
         }
 
         // Note: Deliberately not using Left(x) or Top(y) because it makes number too far right/down
-        private static PrintSymbol MakePrinter(int symbol) =>
+        private static PrintSymbol MakeNumberPrinter(int number) =>
             (Graphics Graphics, int x, int y) =>
-                Graphics.DrawString(symbol.ToString(), font, Brushes.Black, x, y);
+                Graphics.DrawString(number.ToString(), font, Brushes.Black, x, y);
     }
 }
