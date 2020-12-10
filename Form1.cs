@@ -62,6 +62,7 @@ namespace Stitcher
 
             gridImage8x?.Dispose();
             palette?.Dispose();
+            canvas.Controls[gridImageName]?.Dispose();            
 
             this.absoluteFileName = absoluteFileName;
             fileNameLabel.Text = Path.GetFileName(absoluteFileName);
