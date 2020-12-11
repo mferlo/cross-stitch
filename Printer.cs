@@ -42,6 +42,7 @@ namespace Stitcher
 
             using (var graphics = Graphics.FromImage(result))
             {
+                graphics.FillRectangle(Brushes.White, 0, 0, result.Width, result.Height);
                 graphics.DrawImage(stitchGridImage, 0, 0);
                 graphics.DrawImage(colorInfoImage, 0, stitchGridImage.Height + spacing);
             }
