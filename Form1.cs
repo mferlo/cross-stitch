@@ -22,7 +22,7 @@ namespace Stitcher
         string absoluteFileName;
 
         static readonly object nullColor = new object(); // ObjectCollection throws on null; use this as placeholder value
-        static readonly string testImage = @"C:\Users\Matt\Desktop\stitch\black mage.bmp";
+        static readonly string testImage = @"C:\Users\Matt\Desktop\stitch\smw-turtles.png";
 
         int ScalingIndex => zoomSlider.Value;
         int ScalingFactor => 1 << zoomSlider.Value;

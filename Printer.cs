@@ -5,7 +5,6 @@ using System.Linq;
 
 namespace Stitcher
 {
-    // FIXME: note every 10 ticks; add markers pointing to center of grid
     // FIXME: handle case where two colors have the same name
     // FIXME: automatically compose pieces for best printing
     // FIXME: more grid symbols
@@ -29,6 +28,8 @@ namespace Stitcher
         {
             var symbolPrinters = GetSymbolPrinters(palette);
 
+            var widthRulerImage = CreateWidthRuler(image.Width);
+            var heightRulerImage = CreateHeightRuler(image.Height);
             var stitchGridImage = CreateStitchGridImage(image, symbolPrinters);
             var colorInfoImage = CreateColorInfoImage(symbolPrinters, palette);
 
@@ -36,19 +37,99 @@ namespace Stitcher
 
             // FIXME: compose pieces best printing (e.g., if wide, make landscape)
             var result = new Bitmap(
-                width: Math.Max(stitchGridImage.Width, colorInfoImage.Width),
-                height: stitchGridImage.Height + colorInfoImage.Height + spacing
+                width: Math.Max(heightRulerImage.Width + stitchGridImage.Width, colorInfoImage.Width),
+                height: widthRulerImage.Height + stitchGridImage.Height + colorInfoImage.Height + spacing
             );
 
             using (var graphics = Graphics.FromImage(result))
             {
                 graphics.FillRectangle(Brushes.White, 0, 0, result.Width, result.Height);
-                graphics.DrawImage(stitchGridImage, 0, 0);
-                graphics.DrawImage(colorInfoImage, 0, stitchGridImage.Height + spacing);
+
+                var x = heightRulerImage.Width;
+                var y = widthRulerImage.Height;
+                graphics.DrawImage(widthRulerImage, x, 0);
+                graphics.DrawImage(heightRulerImage, 0, y);
+                graphics.DrawImage(stitchGridImage, x, y);
+
+                int colorInfoX;
+                if (result.Width == colorInfoImage.Width)
+                {
+                    colorInfoX = 0;
+                }
+                else
+                {
+                    colorInfoX = (result.Width / 2) - (colorInfoImage.Width / 2);
+                }
+                graphics.DrawImage(colorInfoImage, colorInfoX, y + stitchGridImage.Height + spacing);
             }
 
             return result;
         }
+
+        private static Bitmap CreateWidthRuler(int width)
+        {
+            const int height = 20;
+            const int tickInterval = 5;
+
+            var result = new Bitmap(
+                width: width * (gridSquareSize + 1) + 1,
+                height: height
+            );
+
+            using (var graphics = Graphics.FromImage(result))
+            {
+                graphics.FillRectangle(Brushes.White, 0, 0, result.Width, result.Height);
+
+                for (var i = tickInterval; i < width; i += tickInterval)
+                {
+                    var x = i * (gridSquareSize + gridLineSize);
+                    var s = i.ToString();
+                    graphics.DrawLine(Pens.Black, x, height - 3, x, height);
+                    graphics.DrawString(s, font, Brushes.Black, x - (5 * s.Length), 0);
+                }
+
+                float middle = (width / 2.0f) * (gridSquareSize + gridLineSize);
+                var topLeft = new PointF(middle - 5, height - 5);
+                var topRight = new PointF(middle + 5, height - 5);
+                var bottomMiddle = new PointF(middle, height);
+                
+                graphics.FillPolygon(Brushes.Black, new[] { topLeft, topRight, bottomMiddle });
+            }
+            return result;
+        }
+
+        private static Bitmap CreateHeightRuler(int height)
+        {
+            const int width = 25;
+            const int tickInterval = 5;
+
+            var result = new Bitmap(
+                width: width,
+                height: height * (gridSquareSize + 1) + 1
+            );
+
+            using (var graphics = Graphics.FromImage(result))
+            {
+                graphics.FillRectangle(Brushes.White, 0, 0, result.Width, result.Height);
+
+                for (var i = tickInterval; i < height; i += tickInterval)
+                {
+                    var y = i * (gridSquareSize + gridLineSize);
+                    var s = i.ToString();
+                    graphics.DrawLine(Pens.Black, width - 3, y, width, y);
+                    graphics.DrawString(s, font, Brushes.Black, s.Length == 1 ? 10 : 0, y - 10);
+                }
+
+                float middle = (height / 2.0f) * (gridSquareSize + gridLineSize);
+                var topLeft = new PointF(width - 5, middle - 5);
+                var bottomLeft = new PointF(width - 5, middle + 5);
+                var rightMiddle = new PointF(width, middle);
+                
+                graphics.FillPolygon(Brushes.Black, new[] { topLeft, bottomLeft, rightMiddle });
+            }
+            return result;
+        }
+
 
         private static Bitmap CreateStitchGridImage(Bitmap image, Dictionary<Color, PrintSymbol> symbolPrinters)
         {
@@ -83,7 +164,7 @@ namespace Stitcher
         private static Bitmap CreateColorInfoImage(Dictionary<Color, PrintSymbol> symbolPrinters, Palette palette)
         {
             var result = new Bitmap(
-                width: 300,
+                width: 200,
                 height: (gridSquareSize + 1) * symbolPrinters.Count
             );
 
