@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 
 namespace Stitcher
 {
@@ -202,9 +203,6 @@ namespace Stitcher
             }
         }
 
-        private static readonly IReadOnlyList<PrintSymbol> Printers =
-            new List<PrintSymbol>() { PrintX, PrintTriangle, PrintCircle, PrintCross, PrintInvertedTriangle };
-
         private static Dictionary<Color, PrintSymbol> GetSymbolPrinters(Palette palette)
         {
             var colors = palette.PaletteInfo.OrderByDescending(pi => pi.Count).Select(pi => pi.Color).ToList();
@@ -230,6 +228,28 @@ namespace Stitcher
 
         private static Pen BlackWide = new Pen(Color.Black, 3);
         private static Pen WhiteWide = new Pen(Color.White, 3);
+
+        private static readonly IReadOnlyList<PrintSymbol> Printers;
+
+        static Printer()
+        {
+            bool IsPrintMethod(MethodInfo info)
+            {
+                var args = info.GetParameters();
+
+                return info.Name.StartsWith("Print") &&
+                    info.IsPrivate &&
+                    args.Length == 3 &&
+                    args[0].ParameterType == typeof(Graphics) &&
+                    args[1].ParameterType == typeof(int) &&
+                    args[2].ParameterType == typeof(int);
+            }
+
+            PrintSymbol Invoke(MethodInfo info) =>
+                (Graphics g, int x, int y) => info.Invoke(null, new object[] { g, x, y });
+
+            Printers = typeof(Printer).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).Where(IsPrintMethod).Select(Invoke).ToList();
+        }
 
         private static void PrintX(Graphics graphics, int x, int y)
         {
