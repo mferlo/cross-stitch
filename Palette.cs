@@ -59,6 +59,13 @@ namespace Stitcher
             return new Palette(data);
         }
 
+        public void Remove(Color color)
+        {
+            this.PixelCount -= palette[color].Count;
+            palette[color].Brush.Dispose();
+            palette.Remove(color);
+        }
+
         public void Remove(Color color, int count)
         {
             this.PixelCount -= count;

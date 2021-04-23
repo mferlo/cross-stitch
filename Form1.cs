@@ -400,6 +400,31 @@ namespace Stitcher
             }
         }
 
+        // This impl completely removes the color from consideration.
+        // Compare with alternate impl below. Note that this version
+        // works better for letters, where the enclosed background color
+        // should not be stitched, but just ignored.
+        void RemoveBackgroundColor(Color color)
+        {
+            var image = scaledImages[0];
+
+            for (int x = 0; x < image.Width; x++)
+            {
+                for (int y = 0; y < image.Height; y++)
+                {
+                    if (image.GetPixel(x, y) == color)
+                    {
+                        image.SetPixel(x, y, DefaultBackColor);
+                    }
+                }
+            }
+        }
+
+        /*
+        This impl removes only the color where it connects to the edges of the image
+        This is nice for cases where the image correctly contains the background color,
+        like if we need to stitch the whites of eyes or teeth on a white background.
+
         IEnumerable<(int, int)> EdgeCoordinates(Size size)
         {
             for (var y = 0; y < size.Height; y++)
@@ -460,6 +485,7 @@ namespace Stitcher
 
             return backgroundPixels.Count;
         }
+        */
 
         void setBackgroundButton_Click(object sender, EventArgs e)
         {
@@ -467,8 +493,11 @@ namespace Stitcher
             backgroundColor.BackColor = bgColor;
             selectedBackgroundColor = bgColor;
 
-            var pixelsRemoved = RemoveBackgroundColor(bgColor);
-            this.palette.Remove(bgColor, pixelsRemoved);
+            // Alternate bg impl
+            // var pixelsRemoved = RemoveBackgroundColor(bgColor);
+            // this.palette.Remove(bgColor, pixelsRemoved);
+
+            this.palette.Remove(bgColor);
             InitializeColorListBox();
 
             // Get rid of the old scaled images
