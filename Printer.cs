@@ -8,7 +8,13 @@ namespace Stitcher
 {
     // FIXME: handle case where two colors have the same name
     // FIXME: automatically compose pieces for best printing
-    // FIXME: more grid symbols
+
+    [AttributeUsage(AttributeTargets.Method)]
+    class SymbolPrinterAttribute : Attribute
+    {
+        public int Order;
+        public SymbolPrinterAttribute(int order) => Order = order;
+    }
 
     static class Printer
     {
@@ -233,30 +239,27 @@ namespace Stitcher
 
         static Printer()
         {
-            bool IsPrintMethod(MethodInfo info)
-            {
-                var args = info.GetParameters();
-
-                return info.Name.StartsWith("Print") &&
-                    info.IsPrivate &&
-                    args.Length == 3 &&
-                    args[0].ParameterType == typeof(Graphics) &&
-                    args[1].ParameterType == typeof(int) &&
-                    args[2].ParameterType == typeof(int);
-            }
+            bool IsPrintMethod(MethodInfo info) =>
+                info.GetCustomAttribute(typeof(SymbolPrinterAttribute)) != null;
 
             PrintSymbol Invoke(MethodInfo info) =>
                 (Graphics g, int x, int y) => info.Invoke(null, new object[] { g, x, y });
 
-            Printers = typeof(Printer).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).Where(IsPrintMethod).Select(Invoke).ToList();
+            Printers = typeof(Printer).GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                .Where(IsPrintMethod)
+                .OrderBy(info => ((SymbolPrinterAttribute)info.GetCustomAttribute(typeof(SymbolPrinterAttribute))).Order)
+                .Select(Invoke)
+                .ToList();
         }
 
+        [SymbolPrinter(1)]
         private static void PrintX(Graphics graphics, int x, int y)
         {
             graphics.DrawLine(BlackWide, Left(x), Top(y), Right(x), Bottom(y));
             graphics.DrawLine(BlackWide, Left(x), Bottom(y), Right(x), Top(y));
         }
 
+        [SymbolPrinter(2)]
         private static void PrintTriangle(Graphics graphics, int x, int y)
         {
             graphics.FillRectangle(Brushes.Black, x, y, gridSquareSize, gridSquareSize);
@@ -266,18 +269,51 @@ namespace Stitcher
             graphics.FillPolygon(Brushes.White, new[] { top, left, right });
         }
 
+        [SymbolPrinter(3)]
         private static void PrintCircle(Graphics graphics, int x, int y)
         {
             graphics.FillEllipse(Brushes.Black, Left(x), Top(y), gridSquareSize - 2 * margin, gridSquareSize - 2 * margin);
         }
 
-        private static void PrintCross(Graphics graphics, int x, int y)
+        [SymbolPrinter(4)]
+        private static void PrintWhiteCross(Graphics graphics, int x, int y)
         {
             graphics.FillRectangle(Brushes.Black, x, y, gridSquareSize, gridSquareSize);
             graphics.DrawLine(WhiteWide, Mid(x), Top(y), Mid(x), Bottom(y));
             graphics.DrawLine(WhiteWide, Left(x), Mid(y), Right(x), Mid(y));
         }
 
+        [SymbolPrinter(5)]
+        private static void PrintSquare(Graphics graphics, int x, int y)
+        {
+            graphics.FillRectangle(Brushes.Black, Left(x), Top(y), gridSquareSize - 2 * margin, gridSquareSize - 2 * margin);
+        }
+
+        [SymbolPrinter(6)]
+        private static void PrintBullseye(Graphics graphics, int x, int y)
+        {
+            var r1 = gridSquareSize - 2 * margin;
+            var r2 = r1 - 6;
+            graphics.DrawEllipse(Pens.Black, Left(x), Top(y), r1, r1);
+            graphics.DrawEllipse(Pens.Black, Left(x) + 3, Top(y) + 3, r2, r2);
+        }
+
+        [SymbolPrinter(7)]
+        private static void PrintBlackCross(Graphics graphics, int x, int y)
+        {
+            graphics.DrawLine(BlackWide, Mid(x), Top(y), Mid(x), Bottom(y));
+            graphics.DrawLine(BlackWide, Left(x), Mid(y), Right(x), Mid(y));
+        }
+
+        [SymbolPrinter(8)]
+        private static void PrintSquareWithX(Graphics graphics, int x, int y)
+        {
+            graphics.DrawRectangle(Pens.Black, Left(x), Top(y), gridSquareSize - 2 * margin, gridSquareSize - 2 * margin);
+            graphics.DrawLine(Pens.Black, Left(x), Top(y), Left(x) + gridSquareSize - 2 * margin, Top(y) + gridSquareSize - 2 * margin);
+            graphics.DrawLine(Pens.Black, Left(x) + gridSquareSize - 2 * margin, Top(y), Left(x), Top(y) + gridSquareSize - 2 * margin);
+        }
+
+        [SymbolPrinter(9)]
         private static void PrintInvertedTriangle(Graphics graphics, int x, int y)
         {
             var left = new Point(Left(x), Top(y));
