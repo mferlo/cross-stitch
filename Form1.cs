@@ -39,9 +39,17 @@ namespace Stitcher
             canvas.MouseWheel += CanvasMouseWheelHandler;
             ResizeEnd += (_, __) => { InitializeRulerDrawer(); DrawRulers(); };
 
+            this.AllowDrop = true;
+            this.DragEnter += (_, e) =>
+                e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            this.DragDrop += (_, e) =>
+                LoadImage((string[])e.Data.GetData(DataFormats.FileDrop, false));
+
             // FIXME: disable when no file?
             // printButton.Enabled = false;
         }
+
+        void LoadImage(string[] dragDropFileList) => LoadImage(dragDropFileList.First());
 
         void LoadImage(string absoluteFileName)
         {
